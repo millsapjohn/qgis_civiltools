@@ -1,0 +1,7 @@
+[general]
+name=CivilTools
+description=CAD tools for QGIS
+version=0.1
+qgisMinimumVersion=3.0
+author=John Millsap
+email=jmillsapengineer@gmail.com
