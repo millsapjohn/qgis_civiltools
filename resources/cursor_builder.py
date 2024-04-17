@@ -2,10 +2,11 @@ from PIL import Image, ImageDraw
 transp = (255, 255, 255, 0)
 
 class CTCursor:
-    def __init__(self, pick_size, cross_size, color):
+    def __init__(self, pick_size, cross_size, color, filename):
         self.pick_size = pick_size
         self.cross_size = cross_size
         self.color = color
+        self.filename = filename
         self.drawCursor()
 
     def drawCursor(self):
@@ -29,3 +30,5 @@ class CTCursor:
         draw.line(xy=(self.cross_size, (self.cross_size / 2), ((self.cross_size / 2) + (self.pick_size / 2)), (self.cross_size / 2)),
                     fill=self.color,
                     width=2)
+
+        cursor.save(filename)

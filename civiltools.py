@@ -4,6 +4,7 @@ from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtGui import QIcon
 from .options import CivilToolsOptionsFactory
+from .resources.cursor_builder import CTCursor
 
 app = QgsApplication.instance()
 plugin_path = app.qgisSettingsDirPath()
