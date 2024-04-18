@@ -14,14 +14,15 @@ __modify_menu__ = "Modify Geometry"
 __civil_menu__ = "Create Civil Data"
 __analyze_menu__ = "Analyze"
 __survey_menu__ = "Survey Tools"
-line_icon = QIcon(':/images/themes/default/mIconLineLayer.svg')
-arc_icon = QIcon(':/images/themes/default/mActionDigitizeWithCurve.svg')
-circle_icon = QIcon(':/images/themes/default/mActionCircle2Points.svg')
-curve_icon = QIcon(':/images/themes/default/labelingCalloutCurved.svg')
-point_icon = QIcon(':/images/themes/default/mIconPointLayer.svg')
-rectangle_icon = QIcon(':/images/themes/default/mActionRectangleExtent.svg')
-ellipse_icon = QIcon(':/images/themes/default/mActionEllipseCenterPoint.svg')
-dimension_icon = QIcon(':/images/themes/default/mActionMeasure.svg')
+line_icon = QIcon(":/images/themes/default/mIconLineLayer.svg")
+arc_icon = QIcon(":/images/themes/default/mActionDigitizeWithCurve.svg")
+circle_icon = QIcon(":/images/themes/default/mActionCircle2Points.svg")
+curve_icon = QIcon(":/images/themes/default/labelingCalloutCurved.svg")
+point_icon = QIcon(":/images/themes/default/mIconPointLayer.svg")
+rectangle_icon = QIcon(":/images/themes/default/mActionRectangleExtent.svg")
+ellipse_icon = QIcon(":/images/themes/default/mActionEllipseCenterPoint.svg")
+dimension_icon = QIcon(":/images/themes/default/mActionMeasure.svg")
+
 
 class CivilToolsPlugin:
     def __init__(self, iface):
@@ -37,7 +38,7 @@ class CivilToolsPlugin:
         self.lineAction = QAction(line_icon, "Create Lines...")
         self.createMenu.addAction(self.lineAction)
         self.options_factory = CivilToolsOptionsFactory()
-        self.options_factory.setTitle('CivilTools')
+        self.options_factory.setTitle("CivilTools")
         iface.registerOptionsWidgetFactory(self.options_factory)
 
     def unload(self):
