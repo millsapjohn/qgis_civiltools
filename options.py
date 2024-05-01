@@ -1,6 +1,13 @@
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QHBoxLayout
+from qgis.PyQt.QtWidgets import (
+                                QHBoxLayout,
+                                QVBoxLayout,
+                                QLabel,
+                                QListWidget,
+                                QDialog,
+                                QCheckBox,
+                                )
 
 
 class CivilToolsOptionsFactory(QgsOptionsWidgetFactory):
@@ -17,6 +24,12 @@ class CivilToolsOptionsFactory(QgsOptionsWidgetFactory):
 class CivilToolsConfigOptionsPage(QgsOptionsPageWidget):
     def __init__(self, parent):
         super().__init__(parent)
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
+        self.ovr_layout = QVBoxLayout()
+        self.ovr_layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.ovr_layout)
+        self.layer_layout = QVBoxLayout()
+        self.layer_label = QLabel("Layer Settings")
+        self.layer_layout.addWidget(self.layer_label)
+        self.default_layer_layout = QHBoxLayout()
+
+        self.ovr_layout.addLayout(self.layer_layout)
