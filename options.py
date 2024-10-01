@@ -1,4 +1,5 @@
 from qgis.gui import QgsOptionsWidgetFactory, QgsOptionsPageWidget
+from qgis.core import QgsSettings
 from qgis.utils import iface
 from qgis.PyQt.QtGui import QIcon, QIntValidator
 from qgis.PyQt.QtWidgets import (
@@ -71,3 +72,8 @@ class CivilToolsConfigOptionsPage(QgsOptionsPageWidget):
         extension = os.path.join(pluginpath,'resources\\cursor.jpg')
         new_cursor = CTCursor(self.box_size, self.crosshair_size, (0,0,0), extension)
         new_cursor.drawCursor()
+        s = QgsSettings()
+        s.beginGroup('CivilTools')
+        s.setValue('box_size', self.box_size)
+        s.setValue('crosshair_size', self.crosshair_size)
+        s.endGroup()
