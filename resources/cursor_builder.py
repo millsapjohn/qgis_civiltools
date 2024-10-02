@@ -13,7 +13,7 @@ class CTCursor:
 
     def drawCursor(self):
         cursor = Image.new(
-            mode="RGB", size=(self.cross_size, self.cross_size), color=transp
+            mode="RGBA", size=(self.cross_size, self.cross_size), color=transp
         )
         draw = ImageDraw.Draw(cursor)
         self.tl_pick_coord = (self.cross_size / 2) - (self.pick_size / 2)
@@ -27,7 +27,7 @@ class CTCursor:
             ),
             fill=transp,
             outline=self.color,
-            width=2,
+            width=1,
         )
         draw.line(
             xy=(
@@ -37,7 +37,7 @@ class CTCursor:
                 ((self.cross_size / 2) - (self.pick_size / 2)),
             ),
             fill=self.color,
-            width=2,
+            width=1,
         )
         draw.line(
             xy=(
@@ -47,7 +47,7 @@ class CTCursor:
                 (self.cross_size / 2),
             ),
             fill=self.color,
-            width=2,
+            width=1,
         )
         draw.line(
             xy=(
@@ -57,7 +57,7 @@ class CTCursor:
                 ((self.cross_size / 2) + (self.pick_size / 2)),
             ),
             fill=self.color,
-            width=2,
+            width=1,
         )
         draw.line(
             xy=(
@@ -67,7 +67,7 @@ class CTCursor:
                 (self.cross_size / 2),
             ),
             fill=self.color,
-            width=2,
+            width=1,
         )
 
         cursor.save(self.filename)
