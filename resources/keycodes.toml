@@ -2,10 +2,16 @@
 activate = "CTRL+ENTER"
 snaps = "SNA"
 ortho = "ORT"
-quickselect = "QSE"
-changespace = "CHS"
 undo = "U"
 redo = "R"
+selectbyradius = "SR" # QGIS select tool
+selectbyfreehand = "SF" # QGIS select tool
+selectbydistance = "SD" # QGIS select tool
+selectbylocation = "SL" # QGIS select tool
+selectbyvalue = "SV" # QGIS select tool
+deselect = "ESCAPE"
+save = "CTRL+S"
+repeat = "ENTER"
 
 [commands.create]
 arc = "A"
@@ -38,6 +44,7 @@ copy = "CO"
 chamfer = "CH"
 break = "BR"
 align = "AL"
+movetolayer = "MTL"
 
 [commands.civil]
 samplelines = "SLP"
@@ -60,8 +67,12 @@ createnetwork = "PIN"
 
 [commands.panels]
 volumesdash = "VOD"
-properties = "PR"
+properties = "PR" # QGIS Identify panel
 gradingtemplates = "GTP"
+profiles = "PRF"
+breaklineedit = "BED"
+profileedit = "PED"
+regionedit = "RED"
 
 [commands.annotate]
 revcloud = "RVC"
@@ -81,8 +92,9 @@ dimradius = "DRA"
 
 [commands.analyze]
 lineinfo = "LCP"
-measureangle = "CGA"
-dist = "DI"
+measurearea = "AR" # QGIS measure tool
+measureangle = "CGA" # QGIS measure tool
+dist = "DI" # QGIS measure tool
 
 [commands.display]
 wipeout = "WIP"
