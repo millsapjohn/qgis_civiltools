@@ -30,6 +30,7 @@ class CivilToolsOptionsFactory(QgsOptionsWidgetFactory):
 class CivilToolsConfigOptionsPage(QgsOptionsPageWidget):
     def __init__(self, parent):
         self.iface = iface
+        self.settings = QgsSettings()
         super().__init__(parent)
         self.initUI()
 
@@ -52,28 +53,39 @@ class CivilToolsConfigOptionsPage(QgsOptionsPageWidget):
         self.box_box = QLineEdit()
         self.box_validator = QIntValidator(0, 50, self)
         self.box_box.setValidator(self.box_validator)
+        if self.settings.value('CivilTools/box_size') != None:
+            self.box_box.setPlaceholderText(str(self.settings.value('CivilTools/box_size')))
+        else:
+            self.box_box.setPlaceholderText('10')
         self.cursor_layout.addWidget(self.box_box)
         self.crosshair_label = QLabel("Crosshair Size (pixels)")
         self.cursor_layout.addWidget(self.crosshair_label)
         self.crosshair_box = QLineEdit()
         self.crosshair_validator = QIntValidator(0, 10000, self)
         self.crosshair_box.setValidator(self.crosshair_validator)
+        if self.settings.value('CivilTools/crosshair_size') != None:
+            self.crosshair_box.setPlaceholderText(str(self.settings.value('CivilTools/crosshair_size')))
+        else:
+            self.crosshair_box.setPlaceholderText('1000')
         self.cursor_layout.addWidget(self.crosshair_box)
-        self.cursor_button = QPushButton('Apply')
-        self.cursor_button.clicked.connect(self.getCursorValues)
-        self.cursor_layout.addWidget(self.cursor_button)
 
         self.ovr_layout.addLayout(self.cursor_layout)
-
-    def getCursorValues(self):
-        self.box_size = int(self.box_box.text())
-        self.crosshair_size = int(self.crosshair_box.text())
-        pluginpath = os.path.dirname(os.path.realpath(__file__))
-        extension = os.path.join(pluginpath,'resources\\cursor.jpg')
-        new_cursor = CTCursor(self.box_size, self.crosshair_size, (0,0,0), extension)
-        new_cursor.drawCursor()
-        s = QgsSettings()
-        s.beginGroup('CivilTools')
-        s.setValue('box_size', self.box_size)
-        s.setValue('crosshair_size', self.crosshair_size)
-        s.endGroup()
+      
+    def apply(self):
+        if self.box_box.isModified() == False and self.crosshair_box.isModified() == False:
+            pass
+        else:
+            if self.box_box.isModified() == True:
+                self.box_size = int(self.box_box.text())
+            else:
+                self.box_size = self.settings.value('CivilTools/box_size')
+            if self.crosshair_box.isModified() == True:
+                self.crosshair_size = int(self.crosshair_box.text())
+            else:
+                self.crosshair_size = self.settings.value('CivilTools/crosshair_size')
+            pluginpath = os.path.dirname(os.path.realpath(__file__))
+            extension = os.path.join(pluginpath,'resources\\cursor.jpg')
+            new_cursor = CTCursor(self.box_size, self.crosshair_size, (0,0,0), extension)
+            new_cursor.drawCursor()
+            self.settings.setValue('CivilTools/box_size', self.box_size)
+            self.settings.setValue('CivilTools/crosshair_size', self.crosshair_size)
