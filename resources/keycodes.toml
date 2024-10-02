@@ -1,0 +1,92 @@
+[commands.general]
+activate = "CTRL+ENTER"
+snaps = "SNA"
+ortho = "ORT"
+quickselect = "QSE"
+changespace = "CHS"
+undo = "U"
+redo = "R"
+
+[commands.create]
+arc = "A"
+circle = "C"
+ellipse = "EL"
+line = "L"
+pedit = "PE"
+pline = "PL"
+point = "PO"
+rectangle = "REC"
+
+[commands.modify]
+breakatpoint = "BRP"
+flatten = "FLA"
+trim = "TR"
+scale = "SC"
+rotate = "RO"
+pedit = "PE"
+offset = "O"
+move = "M"
+mirror = "MI"
+matchprop = "MA"
+lengthen = "LEN"
+join = "J"
+fillet = "F"
+extend = "EX"
+explode = "X"
+erase = "E"
+copy = "CO"
+chamfer = "CH"
+break = "BR"
+align = "AL"
+
+[commands.civil]
+samplelines = "SLP"
+sectionviews = "SEV"
+sectionproject = "SEP"
+profilesuperimposed = "PSU"
+profileview = "PRV"
+profilefromsurface = "PRS"
+projecttoprofile = "PRP"
+profilebylayout = "PRL"
+alignmentoffset = "ALO"
+alignment = "AFP"
+
+[commands.civil.grading]
+breakline = "BRL"
+gradingregion = "GR"
+
+[commands.civil.pipes]
+createnetwork = "PIN"
+
+[commands.panels]
+volumesdash = "VOD"
+properties = "PR"
+gradingtemplates = "GTP"
+
+[commands.annotate]
+revcloud = "RVC"
+label = "LAB"
+note = "NOT"
+mtext = "MT"
+list = "LS"
+
+[commands.dimension]
+dimaligned = "DAL"
+dimangular = "DAN"
+dimarc = "DAR"
+dimcontinue = "DCO"
+dimdiameter = "DDA"
+dimlinear = "DLI"
+dimradius = "DRA"
+
+[commands.analyze]
+lineinfo = "LCP"
+measureangle = "CGA"
+dist = "DI"
+
+[commands.display]
+wipeout = "WIP"
+unisolate = "UNI"
+layerthaw = "LAT"
+layerfreeze = "LAF"
+hide = "HIO"
