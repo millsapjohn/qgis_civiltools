@@ -3,7 +3,7 @@ import os
 from qgis.utils import iface
 from qgis.gui import QgsGui
 from qgis.PyQt.QtWidgets import QAction
-from .options import CivilToolsOptionsFactory
+from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
 from .resources.icons import *
 
