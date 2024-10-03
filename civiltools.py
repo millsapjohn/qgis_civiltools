@@ -7,6 +7,7 @@ from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
 from .resources.icons import *
 from .map_tools.base_map_tool import BaseMapTool
+from qgis.gui import QgsMapToolPan
 
 app = QgsApplication.instance()
 
@@ -25,9 +26,10 @@ class CivilToolsPlugin:
         self.initDimMenu()
         self.initToolbar()
         self.validateCursor()
+        self.cursor = QCursor(QPixmap(self.extension))
         self.initializeAction = QAction(settings_icon, "Initialize Project")
         self.mainMenu.addAction(self.initializeAction)
-        self.draftingModeAction = QAction(cad_icon, "Activate Drafting Mode", self.iface.mainWindow())
+        self.draftingModeAction = QAction(cad_icon, "Toggle Drafting Mode", self.iface.mainWindow())
         self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
         self.draftingModeAction.triggered.connect(self.draftingMapTool)
         self.mainMenu.addAction(self.draftingModeAction)        
@@ -128,8 +130,12 @@ class CivilToolsPlugin:
         pass
 
     def draftingMapTool(self):
-        self.iface.messageBar().pushMessage("action triggered")
-        self.cursor = QCursor(QPixmap(self.extension))
-        self.mapTool = BaseMapTool(self.iface.mapCanvas())
-        self.mapTool.setCursor(self.cursor)
-        self.iface.mapCanvas().setMapTool(self.mapTool)
+        if isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
+            self.panTool = QgsMapToolPan(self.iface.mapCanvas())
+            self.iface.mapCanvas().setMapTool(self.panTool)
+            self.iface.messageBar().pushMessage("tool deactivated")
+        else:
+            self.mapTool = BaseMapTool(self.iface.mapCanvas())
+            self.mapTool.setCursor(self.cursor)
+            self.iface.mapCanvas().setMapTool(self.mapTool)
+            self.iface.messageBar().pushMessage("tool activated")
