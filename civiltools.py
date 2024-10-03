@@ -1,6 +1,7 @@
 from qgis.core import QgsApplication
 import os
 from qgis.utils import iface
+from qgis.gui import QgsGui
 from qgis.PyQt.QtWidgets import QAction
 from .options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
@@ -25,7 +26,8 @@ class CivilToolsPlugin:
         self.validateCursor()
         self.initializeAction = QAction(settings_icon, "Initialize Project")
         self.mainMenu.addAction(self.initializeAction)
-        self.draftingModeAction = QAction(cad_icon, "Activate Drafting Mode")
+        self.draftingModeAction = QAction(cad_icon, "Activate Drafting Mode", self.iface.mainWindow())
+        self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
         self.draftingModeAction.triggered.connect(self.draftingMapTool)
         self.mainMenu.addAction(self.draftingModeAction)        
         self.initOptions()
@@ -38,6 +40,7 @@ class CivilToolsPlugin:
         self.iface.pluginMenu().removeAction(self.surveyMenu.menuAction())
         self.iface.pluginMenu().removeAction(self.dimMenu.menuAction())
         self.iface.pluginMenu().removeAction(self.mainMenu.menuAction())
+        self.iface.unregisterMainWindowAction(self.draftingModeAction)
         self.iface.unregisterOptionsWidgetFactory(self.options_factory)
 
     def initCreateMenu(self):
@@ -124,4 +127,4 @@ class CivilToolsPlugin:
         pass
 
     def draftingMapTool(self):
-        pass
+        self.iface.messageBar().pushMessage("action triggered")
