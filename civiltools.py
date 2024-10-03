@@ -5,27 +5,9 @@ from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtGui import QIcon
 from .options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
+from .resources.icons import *
 
 app = QgsApplication.instance()
-plugin_path = app.qgisSettingsDirPath()
-__main_menu__ = "CivilTools"
-__create_menu__ = "Create Geometry"
-__modify_menu__ = "Modify Geometry"
-__civil_menu__ = "Create Civil Data"
-__analyze_menu__ = "Analyze"
-__survey_menu__ = "Survey Tools"
-__dim_menu__ = "Dimensioning Tools"
-line_icon = QIcon(":/images/themes/default/mIconLineLayer.svg")
-arc_icon = QIcon(":/images/themes/default/mActionDigitizeWithCurve.svg")
-circle_icon = QIcon(":/images/themes/default/mActionCircle2Points.svg")
-curve_icon = QIcon(":/images/themes/default/labelingCalloutCurved.svg")
-point_icon = QIcon(":/images/themes/default/mIconPointLayer.svg")
-rectangle_icon = QIcon(":/images/themes/default/mActionRectangleExtent.svg")
-ellipse_icon = QIcon(":/images/themes/default/mActionEllipseCenterPoint.svg")
-dimension_icon = QIcon(":/images/themes/default/mActionMeasure.svg")
-polygon_icon = QIcon(":/images/themes/default/mActionAddPolygon.svg")
-polyline_icon = QIcon(":/images/themes/default/mLayoutItemPolyline.svg")
-placeholder_icon = QIcon(":/qt-project.org/styles/commonstyle/images/titlebar-contexthelp-16.png")
 
 
 class CivilToolsPlugin:
@@ -33,25 +15,18 @@ class CivilToolsPlugin:
         self.iface = iface
 
     def initGui(self):
-        self.mainMenu = self.iface.pluginMenu().addMenu(__main_menu__)
-        self.createMenu = self.mainMenu.addMenu(__create_menu__)
-        self.modifyMenu = self.mainMenu.addMenu(__modify_menu__)
-        self.civilMenu = self.mainMenu.addMenu(__civil_menu__)
-        self.analyzeMenu = self.mainMenu.addMenu(__analyze_menu__)
-        self.surveyMenu = self.mainMenu.addMenu(__survey_menu__)
-        self.dimMenu = self.mainMenu.addMenu(__dim_menu__)
-        self.initializeAction = QAction("Initialize Project")
-        self.mainMenu.addAction(self.initializeAction)
-        self.draftingModeAction = QAction("Activate Drafting Mode")
-        self.mainMenu.addAction(self.draftingModeAction)
+        self.mainMenu = self.iface.pluginMenu().addMenu("CivilTools")
         self.initCreateMenu()
         self.initModifyMenu()
         self.initCivilMenu()
         self.initAnalyzeMenu()
+        self.initSurveyMenu()
         self.initDimMenu()
-        self.options_factory = CivilToolsOptionsFactory()
-        self.options_factory.setTitle("CivilTools")
-        self.iface.registerOptionsWidgetFactory(self.options_factory)
+        self.initializeAction = QAction("Initialize Project")
+        self.mainMenu.addAction(self.initializeAction)
+        self.draftingModeAction = QAction("Activate Drafting Mode")
+        self.mainMenu.addAction(self.draftingModeAction)        
+        self.initOptions()
 
     def unload(self):
         self.iface.pluginMenu().removeAction(self.createMenu.menuAction())
@@ -64,6 +39,7 @@ class CivilToolsPlugin:
         self.iface.unregisterOptionsWidgetFactory(self.options_factory)
 
     def initCreateMenu(self):
+        self.createMenu = self.mainMenu.addMenu("Create Geometry")
         self.pointAction = QAction(point_icon, "Create Points...")
         self.createMenu.addAction(self.pointAction)
         self.lineAction = QAction(line_icon, "Create Lines...")
@@ -84,6 +60,7 @@ class CivilToolsPlugin:
         self.createMenu.addAction(self.squareAction)
 
     def initModifyMenu(self):
+        self.modifyMenu = self.mainMenu.addMenu("Modify Geometry")
         self.trimAction = QAction(placeholder_icon, "Trim...")
         self.modifyMenu.addAction(self.trimAction)
         self.extendAction = QAction(placeholder_icon, "Extend...")
@@ -116,10 +93,18 @@ class CivilToolsPlugin:
         self.modifyMenu.addAction(self.arrayAction)
 
     def initCivilMenu(self):
-        pass
+        self.civilMenu = self.mainMenu.addMenu("Create Civil Data")
 
     def initAnalyzeMenu(self):
-        pass
+        self.analyzeMenu = self.mainMenu.addMenu("Analyze")
 
+    def initSurveyMenu(self):
+        self.surveyMenu = self.mainMenu.addMenu("Survey Tools")
+        
     def initDimMenu(self):
-        pass
+        self.dimMenu = self.mainMenu.addMenu("Dimensioning Tools")
+
+    def initOptions(self):
+        self.options_factory = CivilToolsOptionsFactory()
+        self.options_factory.setTitle("CivilTools")
+        self.iface.registerOptionsWidgetFactory(self.options_factory)
