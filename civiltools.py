@@ -2,7 +2,6 @@ from qgis.core import QgsApplication
 import os
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
-from qgis.PyQt.QtGui import QIcon
 from .options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
 from .resources.icons import *
@@ -22,9 +21,12 @@ class CivilToolsPlugin:
         self.initAnalyzeMenu()
         self.initSurveyMenu()
         self.initDimMenu()
-        self.initializeAction = QAction("Initialize Project")
+        self.initToolbar()
+        self.validateCursor()
+        self.initializeAction = QAction(settings_icon, "Initialize Project")
         self.mainMenu.addAction(self.initializeAction)
-        self.draftingModeAction = QAction("Activate Drafting Mode")
+        self.draftingModeAction = QAction(cad_icon, "Activate Drafting Mode")
+        self.draftingModeAction.triggered.connect(self.draftingMapTool)
         self.mainMenu.addAction(self.draftingModeAction)        
         self.initOptions()
 
@@ -56,40 +58,40 @@ class CivilToolsPlugin:
         self.createMenu.addAction(self.ellipseAction)
         self.rectangleAction = QAction(rectangle_icon, "Create Rectangles...")
         self.createMenu.addAction(self.rectangleAction)
-        self.squareAction = QAction(placeholder_icon, "Create Squares...")
+        self.squareAction = QAction(square_icon, "Create Squares...")
         self.createMenu.addAction(self.squareAction)
 
     def initModifyMenu(self):
         self.modifyMenu = self.mainMenu.addMenu("Modify Geometry")
-        self.trimAction = QAction(placeholder_icon, "Trim...")
+        self.trimAction = QAction(trim_icon, "Trim...")
         self.modifyMenu.addAction(self.trimAction)
-        self.extendAction = QAction(placeholder_icon, "Extend...")
+        self.extendAction = QAction(trim_icon, "Extend...")
         self.modifyMenu.addAction(self.extendAction)
-        self.lengthenAction = QAction(placeholder_icon, "Lengthen...")
+        self.lengthenAction = QAction(lengthen_icon, "Lengthen...")
         self.modifyMenu.addAction(self.lengthenAction)
-        self.scaleAction = QAction(placeholder_icon, "Scale...")
+        self.scaleAction = QAction(scale_icon, "Scale...")
         self.modifyMenu.addAction(self.scaleAction)
-        self.rotateAction = QAction(placeholder_icon, "Rotate...")
+        self.rotateAction = QAction(rotate_icon, "Rotate...")
         self.modifyMenu.addAction(self.rotateAction)
-        self.offsetAction = QAction(placeholder_icon, "Offset...")
+        self.offsetAction = QAction(offset_icon, "Offset...")
         self.modifyMenu.addAction(self.offsetAction)
         self.mirrorAction = QAction(placeholder_icon, "Mirror...")
         self.modifyMenu.addAction(self.mirrorAction)
-        self.alignAction = QAction(placeholder_icon, "Align...")
+        self.alignAction = QAction(align_icon, "Align...")
         self.modifyMenu.addAction(self.alignAction)
-        self.stretchAction = QAction(placeholder_icon, "Stretch...")
+        self.stretchAction = QAction(stretch_icon, "Stretch...")
         self.modifyMenu.addAction(self.stretchAction)
-        self.filletAction = QAction(placeholder_icon, "Fillet...")
+        self.filletAction = QAction(fillet_icon, "Fillet...")
         self.modifyMenu.addAction(self.filletAction)
-        self.chamferAction = QAction(placeholder_icon, "Chamfer...")
+        self.chamferAction = QAction(fillet_icon, "Chamfer...")
         self.modifyMenu.addAction(self.chamferAction)
-        self.breakPointAction = QAction(placeholder_icon, "Break at Point...")
+        self.breakPointAction = QAction(break_icon, "Break at Point...")
         self.modifyMenu.addAction(self.breakPointAction)
-        self.breakAction = QAction(placeholder_icon, "Break Between Points...")
+        self.breakAction = QAction(break_icon, "Break Between Points...")
         self.modifyMenu.addAction(self.breakAction)
-        self.peditAction = QAction(placeholder_icon, "Edit Polylines...")
+        self.peditAction = QAction(pedit_icon, "Edit Polylines...")
         self.modifyMenu.addAction(self.peditAction)
-        self.arrayAction = QAction(placeholder_icon, "Array...")
+        self.arrayAction = QAction(array_icon, "Array...")
         self.modifyMenu.addAction(self.arrayAction)
 
     def initCivilMenu(self):
@@ -108,3 +110,18 @@ class CivilToolsPlugin:
         self.options_factory = CivilToolsOptionsFactory()
         self.options_factory.setTitle("CivilTools")
         self.iface.registerOptionsWidgetFactory(self.options_factory)
+
+    def validateCursor(self):
+        pluginpath = os.path.dirname(os.path.realpath(__file__))
+        extension = os.path.join(pluginpath, 'resources\\cursor.png')
+        if os.path.exists(extension):
+            pass
+        else:
+            new_cursor = CTCursor(6, 100, (0,0,0), extension)
+            new_cursor.drawCursor()
+            
+    def initToolbar(self):
+        pass
+
+    def draftingMapTool(self):
+        pass
