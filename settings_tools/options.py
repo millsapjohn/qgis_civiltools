@@ -13,7 +13,7 @@ from qgis.PyQt.QtWidgets import (
                                 QPushButton,
                                 )
 import os
-from .resources.cursor_builder import CTCursor
+from ..resources.cursor_builder import CTCursor
 
 
 class CivilToolsOptionsFactory(QgsOptionsWidgetFactory):

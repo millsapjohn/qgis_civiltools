@@ -2,9 +2,11 @@ from qgis.core import QgsApplication
 import os
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtGui import QCursor, QPixmap
 from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
 from .resources.icons import *
+from .map_tools.base_map_tool import BaseMapTool
 
 app = QgsApplication.instance()
 
@@ -114,16 +116,20 @@ class CivilToolsPlugin:
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
     def validateCursor(self):
-        pluginpath = os.path.dirname(os.path.realpath(__file__))
-        extension = os.path.join(pluginpath, 'resources\\cursor.png')
-        if os.path.exists(extension):
+        self.pluginpath = os.path.dirname(os.path.realpath(__file__))
+        self.extension = os.path.join(self.pluginpath, 'resources\\cursor.png')
+        if os.path.exists(self.extension):
             pass
         else:
-            new_cursor = CTCursor(6, 100, (0,0,0), extension)
-            new_cursor.drawCursor()
+            self.new_cursor = CTCursor(6, 100, (0,0,0), self.extension)
+            self.new_cursor.drawCursor()
             
     def initToolbar(self):
         pass
 
     def draftingMapTool(self):
         self.iface.messageBar().pushMessage("action triggered")
+        self.cursor = QCursor(QPixmap(self.extension))
+        self.mapTool = BaseMapTool(self.iface.mapCanvas())
+        self.mapTool.setCursor(self.cursor)
+        self.iface.mapCanvas().setMapTool(self.mapTool)
