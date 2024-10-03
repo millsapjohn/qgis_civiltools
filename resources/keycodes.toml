@@ -9,9 +9,10 @@ selectbyfreehand = "SF" # QGIS select tool
 selectbydistance = "SD" # QGIS select tool
 selectbylocation = "SL" # QGIS select tool
 selectbyvalue = "SV" # QGIS select tool
-deselect = "ESCAPE"
+deselect = "ESCAPE" # QGIS deselect all features tool
 save = "CTRL+S"
-repeat = "ENTER"
+repeat = "ENTER;SPACE"
+run = "ENTER;SPACE"
 
 [commands.create]
 arc = "A"
@@ -44,17 +45,20 @@ copy = "CO"
 chamfer = "CH"
 break = "BR"
 align = "AL"
-movetolayer = "MTL"
+stretch = "STR"
+reverse = "RE"
+array = "ARR"
+changelayer = "CHL"
 
 [commands.civil]
 samplelines = "SLP"
-sectionviews = "SEV"
 sectionproject = "SEP"
 profilesuperimposed = "PSU"
-profileview = "PRV"
 profilefromsurface = "PRS"
 projecttoprofile = "PRP"
 profilebylayout = "PRL"
+profileoffset = "POF"
+profileproject = "PPR"
 alignmentoffset = "ALO"
 alignment = "AFP"
 
@@ -70,6 +74,7 @@ volumesdash = "VOD"
 properties = "PR" # QGIS Identify panel
 gradingtemplates = "GTP"
 profiles = "PRF"
+sections = "SEC"
 breaklineedit = "BED"
 profileedit = "PED"
 regionedit = "RED"
@@ -98,6 +103,7 @@ dist = "DI" # QGIS measure tool
 
 [commands.display]
 wipeout = "WIP"
+isolate = "ISO"
 unisolate = "UNI"
 layerthaw = "LAT"
 layerfreeze = "LAF"
