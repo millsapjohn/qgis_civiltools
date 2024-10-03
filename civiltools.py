@@ -1,7 +1,6 @@
 from qgis.core import QgsApplication
 import os
 from qgis.utils import iface
-from qgis.gui import QgsGui
 from qgis.PyQt.QtWidgets import QAction
 from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
