@@ -1,7 +1,16 @@
 [general]
 name=CivilTools
 description=CAD tools for QGIS
+about=create geometry using a CAD-like interface
 version=0.1
 qgisMinimumVersion=3.0
+tracker=https://github.com/millsapjohn/qgis_civiltools/issues
+repository=https://github.com/millsapjohn/qgis/civiltools
+homepage=https://github.com/millsapjohn/qgis_civiltools/wiki
 author=John Millsap
 email=jmillsapengineer@gmail.com
+icon=':/images/themes/default/cadtools/cad.svg'
+
+deprecated=False
+
+qgisMaximumVersion=3.99
