@@ -118,6 +118,7 @@ class CivilToolsPlugin:
         self.iface.registerOptionsWidgetFactory(self.options_factory)
 
     def validateCursor(self):
+        # check for existing cursor image, create new from defaults if not found
         self.pluginpath = os.path.dirname(os.path.realpath(__file__))
         self.extension = os.path.join(self.pluginpath, 'resources\\cursor.png')
         if os.path.exists(self.extension):
@@ -131,11 +132,14 @@ class CivilToolsPlugin:
 
     def draftingMapTool(self):
         if isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
+            # remove base message
+            self.iface.messageBar().clearWidgets()
+            # reset default Pan tool
             self.panTool = QgsMapToolPan(self.iface.mapCanvas())
             self.iface.mapCanvas().setMapTool(self.panTool)
-            self.iface.messageBar().pushMessage("tool deactivated")
+            self.iface.messageBar().pushMessage("Drafting Mode Deactivated")
         else:
-            self.mapTool = BaseMapTool(self.iface.mapCanvas())
+            self.mapTool = BaseMapTool(self.iface.mapCanvas(), self.iface)
             self.mapTool.setCursor(self.cursor)
             self.iface.mapCanvas().setMapTool(self.mapTool)
-            self.iface.messageBar().pushMessage("tool activated")
+            self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
