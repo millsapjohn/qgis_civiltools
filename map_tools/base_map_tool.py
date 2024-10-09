@@ -50,12 +50,11 @@ class BaseMapTool(QgsMapTool):
                 self.message = ""
                 self.cursor_bar.hide()
             case Qt.Key_Tab:
-                # BUG: currently loses focus without sending command
                 self.sendCommand()
+                e.ignore() # prevents event from propagating down the stack and triggering other behavior
             case Qt.Key_Space:
                 self.sendCommand()
             case Qt.Key_Backspace:
-                # BUG: currently attempts to delete features without updating message
                 if len(self.message) == 0:
                     pass
                 elif len(self.message) == 1:
@@ -64,6 +63,7 @@ class BaseMapTool(QgsMapTool):
                 else:
                     self.message = self.message[:-1]
                     self.cursor_bar.setText(self.message)
+                e.ignore() # prevents event from propagating down the stack and triggering other behavior
             case _:
                 if self.message == "":
                     self.cursor_bar.show()
