@@ -1,3 +1,6 @@
+# TODO: figure out how to clip the cursor to the map canvas without
+# having to constantly redraw the cursor dynamically
+
 from qgis.gui import (
     QgsMapCanvas,
     QgsMapMouseEvent,
@@ -5,7 +8,7 @@ from qgis.gui import (
     QgsMapTool,
 )
 from qgis.PyQt.QtGui import QKeyEvent, QCursor, QPixmap
-from qgis.PyQt.QtCore import Qt, QPoint
+from qgis.PyQt.QtCore import Qt, QPoint, QEvent
 from qgis.PyQt.QtWidgets import QLineEdit
 from ..resources.cursor_builder import CTCursor
 import os
@@ -15,7 +18,6 @@ class BaseMapTool(QgsMapTool):
         self.canvas = canvas
         self.iface = iface
         QgsMapTool.__init__(self, self.canvas)
-        # TODO get cursor position for cursor bar
         self.validateCursor()
         self.cursor = QCursor(QPixmap(self.cursorpath))
         self.setCursor(self.cursor)
@@ -46,12 +48,11 @@ class BaseMapTool(QgsMapTool):
         match e.key():
             case Qt.Key_Return:
                 self.sendCommand()
+            case Qt.Key_Enter:
+                self.sendCommand()
             case Qt.Key_Escape:
                 self.message = ""
                 self.cursor_bar.hide()
-            case Qt.Key_Tab:
-                self.sendCommand()
-                e.ignore() # prevents event from propagating down the stack and triggering other behavior
             case Qt.Key_Space:
                 self.sendCommand()
             case Qt.Key_Backspace:
@@ -63,7 +64,7 @@ class BaseMapTool(QgsMapTool):
                 else:
                     self.message = self.message[:-1]
                     self.cursor_bar.setText(self.message)
-                e.ignore() # prevents event from propagating down the stack and triggering other behavior
+                e.ignore() # prevents event from propagating up the stack and triggering other behavior
             case _:
                 if self.message == "":
                     self.cursor_bar.show()
