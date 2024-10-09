@@ -6,6 +6,7 @@ from qgis.gui import (
 )
 from qgis.PyQt.QtGui import QKeyEvent
 from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtWidgets import QLineEdit
 
 class BaseMapTool(QgsMapTool):
     def __init__(self, canvas, iface):
@@ -13,6 +14,7 @@ class BaseMapTool(QgsMapTool):
         self.iface = iface
         QgsMapTool.__init__(self, self.canvas)
         self.message = ""
+        self.cursor_bar = QLineEdit()
 
     def reset(self):
         # clear any messages from child commands, reset base message
