@@ -2,7 +2,6 @@ from qgis.core import QgsApplication
 import os
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
-from qgis.PyQt.QtGui import QCursor, QPixmap
 from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.cursor_builder import CTCursor
 from .resources.icons import *
@@ -25,8 +24,6 @@ class CivilToolsPlugin:
         self.initSurveyMenu()
         self.initDimMenu()
         self.initToolbar()
-        self.validateCursor()
-        self.cursor = QCursor(QPixmap(self.extension))
         self.initializeAction = QAction(settings_icon, "Initialize Project")
         self.mainMenu.addAction(self.initializeAction)
         self.draftingModeAction = QAction(cad_icon, "Toggle Drafting Mode", self.iface.mainWindow())
@@ -116,17 +113,7 @@ class CivilToolsPlugin:
         self.options_factory = CivilToolsOptionsFactory()
         self.options_factory.setTitle("CivilTools")
         self.iface.registerOptionsWidgetFactory(self.options_factory)
-
-    def validateCursor(self):
-        # check for existing cursor image, create new from defaults if not found
-        self.pluginpath = os.path.dirname(os.path.realpath(__file__))
-        self.extension = os.path.join(self.pluginpath, 'resources\\cursor.png')
-        if os.path.exists(self.extension):
-            pass
-        else:
-            self.new_cursor = CTCursor(6, 100, (0,0,0), self.extension)
-            self.new_cursor.drawCursor()
-            
+              
     def initToolbar(self):
         pass
 
@@ -140,6 +127,5 @@ class CivilToolsPlugin:
             self.iface.messageBar().pushMessage("Drafting Mode Deactivated")
         else:
             self.mapTool = BaseMapTool(self.iface.mapCanvas(), self.iface)
-            self.mapTool.setCursor(self.cursor)
             self.iface.mapCanvas().setMapTool(self.mapTool)
             self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
