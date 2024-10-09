@@ -9,8 +9,9 @@ from qgis.gui import (
 )
 from qgis.PyQt.QtGui import QKeyEvent, QCursor, QPixmap
 from qgis.PyQt.QtCore import Qt, QPoint, QEvent
-from qgis.PyQt.QtWidgets import QLineEdit
+from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
 from ..resources.cursor_builder import CTCursor
+from .base_context_menu import baseContextMenu
 import os
 
 class BaseMapTool(QgsMapTool):
@@ -18,6 +19,7 @@ class BaseMapTool(QgsMapTool):
         self.canvas = canvas
         self.iface = iface
         QgsMapTool.__init__(self, self.canvas)
+        self.flags()
         self.validateCursor()
         self.cursor = QCursor(QPixmap(self.cursorpath))
         self.setCursor(self.cursor)
@@ -27,13 +29,23 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.setParent(self.canvas)
         self.cursor_bar.resize(80, 20)
         self.cursor_bar.move(QPoint((self.canvas.mouseLastXY().x() + 10), (self.canvas.mouseLastXY().y() + 10)))
+        # self.canvas.contextMenuAboutToShow.connect(self.populateContextMenu)
+        # TODO: reimplement QgsMapMouseEvent to populate context menu
 
+    def populateContextMenu(self, menu):
+        self.snapMenu = menu.addMenu('Snaps')
+        self.vertexAction = self.snapMenu.addAction('Vertex')
+
+    def flags(self):
+        return super().flags() | QgsMapTool.ShowContextMenu
+    
     def reset(self):
         # clear any messages from child commands, reset base message, hide cursor bar
         self.iface.messageBar().clearWidgets()
         self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
         self.message = ""
         self.cursor_bar.hide()
+        self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
         self.message = ""
@@ -45,6 +57,7 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10)))
     
     def keyPressEvent(self, e):
+        e.ignore()
         match e.key():
             case Qt.Key_Return:
                 self.sendCommand()
@@ -64,7 +77,6 @@ class BaseMapTool(QgsMapTool):
                 else:
                     self.message = self.message[:-1]
                     self.cursor_bar.setText(self.message)
-                e.ignore() # prevents event from propagating up the stack and triggering other behavior
             case _:
                 if self.message == "":
                     self.cursor_bar.show()
@@ -93,3 +105,8 @@ class BaseMapTool(QgsMapTool):
         else:
             self.new_cursor = CTCursor(6, 100, (0,0,0), self.extension)
             self.new_cursor.drawCursor()
+
+    def baseContextMenu(self):
+        self.base_context_menu = QMenu()
+        self.snaps_action = QAction("Snaps")
+        self.base_context_menu.addAction(self.snaps_action)
