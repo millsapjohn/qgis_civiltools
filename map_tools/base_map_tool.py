@@ -1,5 +1,5 @@
-# TODO: figure out how to clip the cursor to the map canvas without
-# having to constantly redraw the cursor dynamically
+# TODO: figure out how to clip the cursor to the map canvas without having to constantly redraw the cursor dynamically
+# TODO: figure out how to override Tab keyboard shortcut
 
 from qgis.gui import (
     QgsMapCanvas,
@@ -29,12 +29,9 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.setParent(self.canvas)
         self.cursor_bar.resize(80, 20)
         self.cursor_bar.move(QPoint((self.canvas.mouseLastXY().x() + 10), (self.canvas.mouseLastXY().y() + 10)))
-        # self.canvas.contextMenuAboutToShow.connect(self.populateContextMenu)
-        # TODO: reimplement QgsMapMouseEvent to populate context menu
 
     def populateContextMenu(self, menu):
-        self.snapMenu = menu.addMenu('Snaps')
-        self.vertexAction = self.snapMenu.addAction('Vertex')
+        self.context_menu = baseContextMenu(menu)
 
     def flags(self):
         return super().flags() | QgsMapTool.ShowContextMenu
@@ -105,8 +102,3 @@ class BaseMapTool(QgsMapTool):
         else:
             self.new_cursor = CTCursor(6, 100, (0,0,0), self.extension)
             self.new_cursor.drawCursor()
-
-    def baseContextMenu(self):
-        self.base_context_menu = QMenu()
-        self.snaps_action = QAction("Snaps")
-        self.base_context_menu.addAction(self.snaps_action)
