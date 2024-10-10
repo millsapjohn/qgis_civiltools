@@ -10,6 +10,7 @@ from qgis.gui import (
 from qgis.PyQt.QtGui import QKeyEvent, QCursor, QPixmap
 from qgis.PyQt.QtCore import Qt, QPoint, QEvent
 from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
+from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer
 from ..resources.cursor_builder import CTCursor
 from .context_menus import baseContextMenu
 import os
@@ -23,12 +24,22 @@ class BaseMapTool(QgsMapTool):
         self.validateCursor()
         self.cursor = QCursor(QPixmap(self.cursorpath))
         self.setCursor(self.cursor)
-        self.message = ""
+        self.message = "" # string to display next to cursor
         self.last_command = ""
+        self.vlayers = [] # list of visible vector layers in the project
+        self.getVectorLayers()
+        self.selfeatures = {} # dict of selected features and their layer
+        self.sellayers = [] # list of layers that currently have a feature selected
         self.cursor_bar = QLineEdit()
         self.cursor_bar.setParent(self.canvas)
         self.cursor_bar.resize(80, 20)
         self.cursor_bar.move(QPoint((self.canvas.mouseLastXY().x() + 10), (self.canvas.mouseLastXY().y() + 10)))
+
+    def on_map_tool_set(self, new_tool, old_tool):
+        if new_tool == self:
+            pass
+        else:
+            self.reset()
 
     def populateContextMenu(self, menu):
         self.context_menu = baseContextMenu(menu)
@@ -38,14 +49,20 @@ class BaseMapTool(QgsMapTool):
     
     def reset(self):
         # clear any messages from child commands, reset base message, hide cursor bar
+        # clear selection list, disconnect from context menu slot
         self.iface.messageBar().clearWidgets()
         self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
         self.message = ""
+        self.selfeatures = {}
+        self.sellayers = []
         self.cursor_bar.hide()
         self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
         self.message = ""
+        self.vlayers = []
+        self.selfeatures = {}
+        self.sellayers = []
         self.cursor_bar.hide()
         QgsMapTool.deactivate(self)
         self.deactivated.emit()
@@ -61,8 +78,7 @@ class BaseMapTool(QgsMapTool):
             case Qt.Key_Enter:
                 self.sendCommand()
             case Qt.Key_Escape:
-                self.message = ""
-                self.cursor_bar.hide()
+                self.reset()
             case Qt.Key_Space:
                 self.sendCommand()
             case Qt.Key_Backspace:
@@ -102,3 +118,8 @@ class BaseMapTool(QgsMapTool):
         else:
             self.new_cursor = CTCursor(6, 100, (0,0,0), self.extension)
             self.new_cursor.drawCursor()
+
+    def getVectorLayers(self):
+        for layer in QgsProject.instance().mapLayers().values():
+            if isinstance(layer, QgsVectorLayer):
+                self.vlayers.append(layer)
