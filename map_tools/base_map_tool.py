@@ -11,7 +11,7 @@ from qgis.PyQt.QtGui import QKeyEvent, QCursor, QPixmap
 from qgis.PyQt.QtCore import Qt, QPoint, QEvent
 from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
 from ..resources.cursor_builder import CTCursor
-from .base_context_menu import baseContextMenu
+from .context_menus import baseContextMenu
 import os
 
 class BaseMapTool(QgsMapTool):

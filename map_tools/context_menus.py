@@ -31,3 +31,10 @@ def baseContextMenu(menu: QMenu):
     select_action = menu.addAction("Select...")
     find_action = menu.addAction("Find...")
     options_action = menu.addAction("Options...")
+    misc_separator = menu.addSeparator()
+
+def selectedContextMenu(menu: QMenu):
+    prop_action = menu.addAction("Properties")
+    similar_action = menu.addAction("Select Similar")
+    count_action = menu.addAction("Count Selected")
+    selected_separator = menu.addSeparator()
