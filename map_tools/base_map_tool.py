@@ -120,6 +120,6 @@ class BaseMapTool(QgsMapTool):
             self.new_cursor.drawCursor()
 
     def getVectorLayers(self):
-        for layer in QgsProject.instance().mapLayers().values():
-            if isinstance(layer, QgsVectorLayer):
+        for layer in QgsProject.instance().layerTreeRoot().findLayers():
+            if layer.isVisible() and isinstance(layer.layer(), QgsVectorLayer):
                 self.vlayers.append(layer)
