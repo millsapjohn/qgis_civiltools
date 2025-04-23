@@ -1,0 +1,1 @@
+setting to toggle layers/change background/change cursor color when toggling drafting mode
