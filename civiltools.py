@@ -1,5 +1,6 @@
-from qgis.core import QgsApplication
+from qgis.core import QgsApplication, QgsProject, QgsExpressionContextUtils, QgsProviderRegistry, QgsVectorLayer
 import os
+from osgeo import ogr
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
 from .settings_tools.options import CivilToolsOptionsFactory
@@ -7,6 +8,9 @@ from .resources.cursor_builder import CTCursor
 from .resources.icons import *
 from .map_tools.base_map_tool import BaseMapTool
 from qgis.gui import QgsMapToolPan
+from .settings_tools.init_error_dialog import initErrorDialog
+from .settings_tools.init_dialog import initDialog
+from .settings_tools.gpkg_builder import gpkgBuilder
 
 app = QgsApplication.instance()
 
@@ -26,6 +30,7 @@ class CivilToolsPlugin:
         self.initToolbar()
         self.initializeAction = QAction(settings_icon, "Initialize Project")
         self.mainMenu.addAction(self.initializeAction)
+        self.initializeAction.triggered.connect(self.initializeProject)
         self.draftingModeAction = QAction(cad_icon, "Toggle Drafting Mode", self.iface.mainWindow())
         self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
         self.draftingModeAction.triggered.connect(self.draftingMapTool)
@@ -129,3 +134,55 @@ class CivilToolsPlugin:
             self.mapTool = BaseMapTool(self.iface.mapCanvas(), self.iface)
             self.iface.mapCanvas().setMapTool(self.mapTool)
             self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
+
+    def initializeProject(self):
+        project = QgsProject.instance()
+        if project.crs().isGeographic() == True:
+            dialog = initErrorDialog()
+            dialog.exec()
+        elif QgsExpressionContextUtils.projectScope(project).variable('initialized'):
+            iface.messageBar().pushMessage("Project Has Already Been Initialized")
+        else:
+            dialog = initDialog()
+            dialog.exec()
+            if dialog.success == True:
+                if not hasattr(dialog, 'filename'):
+                    iface.messageBar().pushMessage('No filename specified')
+                else:
+                    self.filename = dialog.filename
+                    self.createPackage()
+
+    def createPackage(self):
+        project = QgsProject.instance()
+        md = QgsProviderRegistry.instance().providerMetadata('ogr')
+        if self.filename:
+            QgsExpressionContextUtils.setProjectVariable(project, 'CAD_file', self.filename)
+            basename = os.path.basename(self.filename)
+            gpkgBuilder(self.filename)
+            layers = [l.GetName() for l in ogr.Open(self.filename)]
+            first_layer = layers[0]
+            layer_path = self.filename + "|layername={first_layer}"
+            vl = QgsVectorLayer(layer_path, basename, 'ogr')
+            conn = md.createConnection(vl.dataProvider().dataSourceUri(), {})
+            md.saveConnection(conn, basename)
+            iface.reloadConnections()
+            group_name = "CAD Layers"
+            root = project.layerTreeRoot()
+            group = root.addGroup(group_name)
+            for layer in layers:
+                layer_path = self.filename + f"|layername={layer}"
+                vl = QgsVectorLayer(layer_path, layer, 'ogr')
+                project.addMapLayer(vl)
+                vlid = root.findLayer(vl.id())
+                clone = vlid.clone()
+                group.insertChildNode(0, clone)
+                vlid.parent().removeChildNode(vlid)
+                group.setExpanded(False)
+            if QgsExpressionContextUtils.projectScope(project).variable('project_gpkg_connections'):
+                connections = QgsExpressionContextUtils.projectScope(project).variable('project_gpkg_connections')
+                connections = connections + basename + ';' + self.filename + ';'
+                QgsExpressionContextUtils.setProjectVariable(project, 'project_gpkg_connections', connections)
+            else:
+                connections = basename + ';' + self.filename + ';'
+                QgsExpressionContextUtils.setProjectVariable(project, 'gpkg_connections', connections)
+            QgsExpressionContextUtils.setProjectVariable(project, 'CAD_initialized', 'True')
