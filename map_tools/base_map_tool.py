@@ -83,7 +83,14 @@ class BaseMapTool(QgsMapTool):
                 self.sendCommand()
             case Qt.Key_Backspace:
                 if len(self.message) == 0:
-                    pass
+                    self.order = QgsProject.instance().layerTreeRoot().layerOrder()
+                    for layer in self.order:
+                        if layer.source() not in self.vlayers:
+                            continue
+                        else:
+                            ids = layer.selectedFeatureIds()
+                            for id in ids:
+                                layer.deselect(id)
                 elif len(self.message) == 1:
                     self.message = ""
                     self.cursor_bar.hide()
@@ -125,11 +132,19 @@ class BaseMapTool(QgsMapTool):
                 self.vlayers.append(layer.layer().source())
 
     def canvasPressEvent(self, event):
+        selected = []
         center = event.mapPoint()
         sel_rect = QgsRectangle((center.x() - 2.0), (center.y() - 2.0), (center.x() + 2.0), (center.y() + 2.0))
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
         for layer in self.order:
+            if selected != []:
+                break
             if layer.source() not in self.vlayers:
                 pass
             else:
                 layer.selectByRect(sel_rect)
+                ids = layer.selectedFeatureIds()
+                if len(ids) > 1:
+                    keep = ids[0]
+                    for id in ids:
+                        layer.deselect(id)
