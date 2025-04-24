@@ -173,6 +173,8 @@ class CivilToolsPlugin:
                 layer_path = self.filename + f"|layername={layer}"
                 vl = QgsVectorLayer(layer_path, layer, 'ogr')
                 project.addMapLayer(vl)
+                if not vl.isEditable():
+                    vl.startEditing()
                 vlid = root.findLayer(vl.id())
                 clone = vlid.clone()
                 group.insertChildNode(0, clone)

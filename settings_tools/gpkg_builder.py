@@ -24,7 +24,7 @@ def gpkgBuilder(gpkg_path):
     layer = QgsVectorLayer("Point", "points", "memory")
     layer.setCrs(crs)
     provider = layer.dataProvider()
-    provider.addAttributes([QgsField("level", QVariant.String)])
+    provider.addAttributes([QgsField("level", QVariant.String), QgsField("style_byLayer", QVariant.Bool), QgsField("style", QVariant.String)])
     layer.updateFields()
     options = QgsVectorFileWriter.SaveVectorOptions()
     options.layerName = layer.name()
@@ -36,6 +36,10 @@ def gpkgBuilder(gpkg_path):
         options.layerName = layer.name()
         layer.setCrs(crs)
         provider = layer.dataProvider()
-        provider.addAttributes([QgsField("level", QVariant.String)])
+        provider.addAttributes([QgsField("level", QVariant.String), QgsField("style_byLayer", QVariant.Bool), QgsField("style", QVariant.String)])
+        if layer.name() == "cad_pipes":
+            provider.addAttributes([QgsField("part", QVariant.String)])
+        elif layer.name() == "cad_structures":
+            provider.addAttributes([QgsField("part", QVariant.String)])
         layer.updateFields()
         QgsVectorFileWriter.writeAsVectorFormatV2(layer, uri, context, options)
