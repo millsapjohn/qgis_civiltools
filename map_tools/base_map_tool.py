@@ -10,7 +10,7 @@ from qgis.gui import (
 from qgis.PyQt.QtGui import QKeyEvent, QCursor, QPixmap
 from qgis.PyQt.QtCore import Qt, QPoint, QEvent
 from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
-from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer
+from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer, QgsRectangle
 from ..resources.cursor_builder import CTCursor
 from .context_menus import baseContextMenu
 import os
@@ -122,4 +122,14 @@ class BaseMapTool(QgsMapTool):
     def getVectorLayers(self):
         for layer in QgsProject.instance().layerTreeRoot().findLayers():
             if layer.isVisible() and isinstance(layer.layer(), QgsVectorLayer):
-                self.vlayers.append(layer)
+                self.vlayers.append(layer.layer().source())
+
+    def canvasPressEvent(self, event):
+        center = event.mapPoint()
+        sel_rect = QgsRectangle((center.x() - 2.0), (center.y() - 2.0), (center.x() + 2.0), (center.y() + 2.0))
+        self.order = QgsProject.instance().layerTreeRoot().layerOrder()
+        for layer in self.order:
+            if layer.source() not in self.vlayers:
+                pass
+            else:
+                layer.selectByRect(sel_rect)
