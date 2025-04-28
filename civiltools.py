@@ -123,7 +123,10 @@ class CivilToolsPlugin:
         pass
 
     def draftingMapTool(self):
-        if isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
+        project = QgsProject.instance()
+        if not QgsExpressionContextUtils.projectScope(project).variable('initialized'):
+            iface.messageBar().pushMessage("Project has not been initialized")
+        elif isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
             # remove base message
             self.iface.messageBar().clearWidgets()
             # reset default Pan tool
