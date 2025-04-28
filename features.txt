@@ -1,1 +1,35 @@
 setting to toggle layers/change background/change cursor color when toggling drafting mode
+command to hide all annotations
+
+Arc
+- start
+	- center
+		- angle
+		- chord length
+		(reverse direction)
+	- end
+		- angle
+		- direction
+		- radius
+		(reverse direction)
+- center
+
+Array
+
+Circle
+
+Chamfer
+
+Copy
+
+Ellipse
+
+Fillet
+
+Line
+
+Lengthen
+
+Mirror
+
+Polyline Edit
