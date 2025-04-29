@@ -1,4 +1,3 @@
-# TODO: figure out how to clip the cursor to the map canvas without having to constantly redraw the cursor dynamically
 # TODO: figure out how to override Tab keyboard shortcut
 
 from qgis.gui import (
@@ -7,7 +6,7 @@ from qgis.gui import (
     QgsRubberBand,
     QgsMapTool,
 )
-from qgis.PyQt.QtGui import QKeyEvent, QColor
+from qgis.PyQt.QtGui import QKeyEvent, QColor, QCursor
 from qgis.PyQt.QtCore import Qt, QPoint, QEvent
 from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
 from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer, QgsRectangle, QgsSettings, QgsLineString, QgsPoint, QgsGeometry
@@ -19,8 +18,6 @@ class BaseMapTool(QgsMapTool):
     def __init__(self, canvas, iface):
         self.canvas = canvas
         self.iface = iface
-        self.icon = QgsRubberBand(self.canvas)
-        self.icon.setColor(QColor(0,0,0))
         self.settings = QgsSettings()
         if self.settings.value('CivilTools/box_size') != None:
             self.box_size_raw = int(self.settings.value('CivilTools/box_size'))
@@ -31,6 +28,11 @@ class BaseMapTool(QgsMapTool):
         else:
             self.crosshair_size_raw = 100
         QgsMapTool.__init__(self, self.canvas)
+        self.cursor = QCursor()
+        self.cursor.setShape(Qt.BlankCursor)
+        self.setCursor(self.cursor)
+        self.icon = QgsRubberBand(self.canvas)
+        self.icon.setColor(QColor(0,0,0))
         self.initx = canvas.mouseLastXY().x()
         self.inity = canvas.mouseLastXY().y()
         self.drawCursor(self.canvas, self.icon, self.initx, self.inity)
@@ -83,7 +85,6 @@ class BaseMapTool(QgsMapTool):
     def canvasMoveEvent(self, e):
         self.drawCursor(self.canvas, self.icon, e.pixelPoint().x(), e.pixelPoint().y())
         self.cursor_bar.move(QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10)))
-        self.iface.messageBar().pushMessage(str(self.mapx))
     
     def keyPressEvent(self, e):
         e.ignore()
