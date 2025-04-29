@@ -7,10 +7,10 @@ from qgis.gui import (
     QgsRubberBand,
     QgsMapTool,
 )
-from qgis.PyQt.QtGui import QKeyEvent, QCursor, QPixmap
+from qgis.PyQt.QtGui import QKeyEvent, QColor
 from qgis.PyQt.QtCore import Qt, QPoint, QEvent
 from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
-from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer, QgsRectangle
+from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer, QgsRectangle, QgsSettings, QgsLineString, QgsPoint, QgsGeometry
 from ..resources.cursor_builder import CTCursor
 from .context_menus import baseContextMenu
 import os
@@ -19,11 +19,22 @@ class BaseMapTool(QgsMapTool):
     def __init__(self, canvas, iface):
         self.canvas = canvas
         self.iface = iface
+        self.icon = QgsRubberBand(self.canvas)
+        self.icon.setColor(QColor(0,0,0))
+        self.settings = QgsSettings()
+        if self.settings.value('CivilTools/box_size') != None:
+            self.box_size_raw = int(self.settings.value('CivilTools/box_size'))
+        else:
+            self.box_size_raw = 10
+        if self.settings.value('CivilTools/crosshair_size') != None:
+            self.crosshair_size_raw = int(self.settings.value('CivilTools/crosshair_size'))
+        else:
+            self.crosshair_size_raw = 100
         QgsMapTool.__init__(self, self.canvas)
+        self.initx = canvas.mouseLastXY().x()
+        self.inity = canvas.mouseLastXY().y()
+        self.drawCursor(self.canvas, self.icon, self.initx, self.inity)
         self.flags()
-        self.validateCursor()
-        self.cursor = QCursor(QPixmap(self.cursorpath))
-        self.setCursor(self.cursor)
         self.message = "" # string to display next to cursor
         self.last_command = ""
         self.vlayers = [] # list of visible vector layers in the project
@@ -56,6 +67,7 @@ class BaseMapTool(QgsMapTool):
         self.selfeatures = {}
         self.sellayers = []
         self.cursor_bar.hide()
+        self.icon.reset()
         self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
@@ -64,11 +76,14 @@ class BaseMapTool(QgsMapTool):
         self.selfeatures = {}
         self.sellayers = []
         self.cursor_bar.hide()
+        self.icon.reset()
         QgsMapTool.deactivate(self)
         self.deactivated.emit()
 
     def canvasMoveEvent(self, e):
+        self.drawCursor(self.canvas, self.icon, e.pixelPoint().x(), e.pixelPoint().y())
         self.cursor_bar.move(QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10)))
+        self.iface.messageBar().pushMessage(str(self.mapx))
     
     def keyPressEvent(self, e):
         e.ignore()
@@ -115,17 +130,6 @@ class BaseMapTool(QgsMapTool):
             self.message = ""
             self.cursor_bar.hide()
 
-    def validateCursor(self):
-        # check for existing cursor image, create new from defaults if not found
-        self.filepath = os.path.dirname(os.path.realpath(__file__))
-        self.pluginpath = os.path.split(self.filepath)[0]
-        self.cursorpath = os.path.join(self.pluginpath, 'resources/cursor.png')
-        if os.path.exists(self.cursorpath):
-            pass
-        else:
-            self.new_cursor = CTCursor(6, 100, (0,0,0), self.extension)
-            self.new_cursor.drawCursor()
-
     def getVectorLayers(self):
         for layer in QgsProject.instance().layerTreeRoot().findLayers():
             if layer.isVisible() and isinstance(layer.layer(), QgsVectorLayer):
@@ -148,3 +152,57 @@ class BaseMapTool(QgsMapTool):
                     keep = ids[0]
                     for id in ids:
                         layer.deselect(id)
+
+    def drawCursor(self, canvas, icon, pixelx, pixely):
+        icon.reset()
+        self.extent = canvas.extent()
+        self.xmax = self.extent.xMaximum()
+        self.xmin = self.extent.xMinimum()
+        self.ymax = self.extent.yMaximum()
+        self.ymin = self.extent.yMinimum()
+        self.factor = canvas.mapUnitsPerPixel()
+        self.box_size = self.box_size_raw * self.factor
+        self.crosshair_size = self.crosshair_size_raw * self.factor
+        self.mapx = (pixelx * self.factor) + self.xmin
+        self.mapy = self.ymax - (pixely * self.factor)
+        self.map_position = QgsPoint(self.mapx, self.mapy)
+        self.box_left = QgsGeometry(QgsLineString(QgsPoint((self.mapx - self.box_size), (self.mapy - self.box_size)), QgsPoint((self.mapx - self.box_size), (self.mapy + self.box_size))))
+        self.box_right = QgsGeometry(QgsLineString(QgsPoint((self.mapx + self. box_size), (self.mapy - self.box_size)), QgsPoint((self.mapx + self.box_size), (self.mapy + self.box_size))))
+        self.box_top = QgsGeometry(QgsLineString(QgsPoint((self.mapx - self.box_size), (self.mapy - self.box_size)), QgsPoint((self.mapx + self.box_size), (self.mapy - self.box_size))))
+        self.box_bot = QgsGeometry(QgsLineString(QgsPoint((self.mapx - self.box_size), (self.mapy + self.box_size)), QgsPoint((self.mapx + self.box_size), (self.mapy + self.box_size))))
+        if self.map_position.x() - self.box_size - self.crosshair_size > self.xmin:
+            self.left_len = self.crosshair_size
+        else:
+            self.left_len = self.map_position.x() - self.box_size - self.xmin
+        if self.map_position.x() + self.box_size + self.crosshair_size < self.xmax:
+            self.right_len = self.crosshair_size
+        else:
+            self.right_len = self.xmax - self.box_size - self.map_position.x()
+        if self.map_position.y() - self.box_size - self.crosshair_size > self.ymin:
+            self.down_len = self.crosshair_size
+        else:
+            self.down_len = self.map_position.y() - self.box_size - self.ymin
+        if self.map_position.y() + self.box_size + self.crosshair_size < self.ymax:
+            self.up_len = self.crosshair_size
+        else:
+            self.up_len = self.ymax - self.box_size - self.map_position.y()
+        self.left_start = QgsPoint((self.map_position.x() - self.box_size), self.map_position.y())
+        self.left_end = QgsPoint((self.map_position.x() - self.box_size - self.left_len), self.map_position.y())
+        self.left_line = QgsGeometry(QgsLineString(self.left_end, self.left_start))
+        self.right_start = QgsPoint((self.map_position.x() + self.box_size), self.map_position.y())
+        self.right_end = QgsPoint((self.map_position.x() + self.box_size + self.right_len), self.map_position.y())
+        self.right_line = QgsGeometry(QgsLineString(self.right_start, self.right_end))
+        self.up_start = QgsPoint(self.map_position.x(), (self.map_position.y() + self.box_size))
+        self.up_end = QgsPoint(self.map_position.x(), (self.map_position.y() + self.box_size + self.up_len))
+        self.up_line = QgsGeometry(QgsLineString(self.up_start, self.up_end))
+        self.down_start = QgsPoint(self.map_position.x(), (self.map_position.y() - self.box_size))
+        self.down_end = QgsPoint(self.map_position.x(), (self.map_position.y() - self.box_size - self.down_len))
+        self.down_line = QgsGeometry(QgsLineString(self.down_start, self.down_end))
+        icon.addGeometry(self.box_left, doUpdate=False)
+        icon.addGeometry(self.box_right, doUpdate=False)
+        icon.addGeometry(self.box_top, doUpdate=False)
+        icon.addGeometry(self.box_bot, doUpdate=False)
+        icon.addGeometry(self.left_line, doUpdate=False)
+        icon.addGeometry(self.right_line, doUpdate=False)
+        icon.addGeometry(self.up_line, doUpdate=False)
+        icon.addGeometry(self.down_line)

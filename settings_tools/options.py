@@ -13,7 +13,6 @@ from qgis.PyQt.QtWidgets import (
                                 QPushButton,
                                 )
 import os
-from ..resources.cursor_builder import CTCursor
 
 
 class CivilToolsOptionsFactory(QgsOptionsWidgetFactory):
@@ -83,9 +82,5 @@ class CivilToolsConfigOptionsPage(QgsOptionsPageWidget):
                 self.crosshair_size = int(self.crosshair_box.text())
             else:
                 self.crosshair_size = self.settings.value('CivilTools/crosshair_size')
-            pluginpath = os.path.dirname(os.path.realpath(__file__))
-            extension = os.path.join(pluginpath,'resources\\cursor.png')
-            new_cursor = CTCursor(self.box_size, self.crosshair_size, (0,0,0), extension)
-            new_cursor.drawCursor()
             self.settings.setValue('CivilTools/box_size', self.box_size)
             self.settings.setValue('CivilTools/crosshair_size', self.crosshair_size)

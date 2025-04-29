@@ -124,7 +124,7 @@ class CivilToolsPlugin:
 
     def draftingMapTool(self):
         project = QgsProject.instance()
-        if not QgsExpressionContextUtils.projectScope(project).variable('initialized'):
+        if not QgsExpressionContextUtils.projectScope(project).variable('CAD_initialized'):
             iface.messageBar().pushMessage("Project has not been initialized")
         elif isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
             # remove base message
