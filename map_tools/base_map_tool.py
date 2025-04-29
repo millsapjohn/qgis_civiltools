@@ -27,7 +27,12 @@ class BaseMapTool(QgsMapTool):
             self.crosshair_size_raw = int(self.settings.value('CivilTools/crosshair_size'))
         else:
             self.crosshair_size_raw = 100
+        if self.settings.value('CivilTools/bg_color') != None:
+            self.override_color = self.settings.value('CivilTools/bg_color')
+        else:
+            self.override_color = QgsProject.instance().backgroundColor()
         QgsMapTool.__init__(self, self.canvas)
+        self.canvas.setCanvasColor(self.override_color)
         self.cursor = QCursor()
         self.cursor.setShape(Qt.BlankCursor)
         self.setCursor(self.cursor)
@@ -79,6 +84,7 @@ class BaseMapTool(QgsMapTool):
         self.sellayers = []
         self.cursor_bar.hide()
         self.icon.reset()
+        self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
         QgsMapTool.deactivate(self)
         self.deactivated.emit()
 
