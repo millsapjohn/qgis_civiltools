@@ -1,4 +1,10 @@
-from qgis.core import QgsApplication, QgsProject, QgsExpressionContextUtils, QgsProviderRegistry, QgsVectorLayer
+from qgis.core import (
+    QgsApplication,
+    QgsProject,
+    QgsExpressionContextUtils,
+    QgsProviderRegistry,
+    QgsVectorLayer,
+)
 import os
 from osgeo import ogr
 from qgis.utils import iface
@@ -31,10 +37,12 @@ class CivilToolsPlugin:
         self.initializeAction = QAction(settings_icon, "Initialize Project")
         self.mainMenu.addAction(self.initializeAction)
         self.initializeAction.triggered.connect(self.initializeProject)
-        self.draftingModeAction = QAction(cad_icon, "Toggle Drafting Mode", self.iface.mainWindow())
+        self.draftingModeAction = QAction(
+            cad_icon, "Toggle Drafting Mode", self.iface.mainWindow()
+        )
         self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
         self.draftingModeAction.triggered.connect(self.draftingMapTool)
-        self.mainMenu.addAction(self.draftingModeAction)        
+        self.mainMenu.addAction(self.draftingModeAction)
         self.initOptions()
 
     def unload(self):
@@ -110,7 +118,7 @@ class CivilToolsPlugin:
 
     def initSurveyMenu(self):
         self.surveyMenu = self.mainMenu.addMenu("Survey Tools")
-        
+
     def initDimMenu(self):
         self.dimMenu = self.mainMenu.addMenu("Dimensioning Tools")
 
@@ -118,13 +126,13 @@ class CivilToolsPlugin:
         self.options_factory = CivilToolsOptionsFactory()
         self.options_factory.setTitle("CivilTools")
         self.iface.registerOptionsWidgetFactory(self.options_factory)
-              
+
     def initToolbar(self):
         pass
 
     def draftingMapTool(self):
         project = QgsProject.instance()
-        if not QgsExpressionContextUtils.projectScope(project).variable('CAD_file'):
+        if not QgsExpressionContextUtils.projectScope(project).variable("CAD_file"):
             iface.messageBar().pushMessage("Project has not been initialized")
         elif isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
             # remove base message
@@ -143,29 +151,31 @@ class CivilToolsPlugin:
         if project.crs().isGeographic() == True:
             dialog = initErrorDialog()
             dialog.exec()
-        elif QgsExpressionContextUtils.projectScope(project).variable('initialized'):
+        elif QgsExpressionContextUtils.projectScope(project).variable("initialized"):
             iface.messageBar().pushMessage("Project Has Already Been Initialized")
         else:
             dialog = initDialog()
             dialog.exec()
             if dialog.success == True:
-                if not hasattr(dialog, 'filename'):
-                    iface.messageBar().pushMessage('No filename specified')
+                if not hasattr(dialog, "filename"):
+                    iface.messageBar().pushMessage("No filename specified")
                 else:
                     self.filename = dialog.filename
                     self.createPackage()
 
     def createPackage(self):
         project = QgsProject.instance()
-        md = QgsProviderRegistry.instance().providerMetadata('ogr')
+        md = QgsProviderRegistry.instance().providerMetadata("ogr")
         if self.filename:
-            QgsExpressionContextUtils.setProjectVariable(project, 'CAD_file', self.filename)
+            QgsExpressionContextUtils.setProjectVariable(
+                project, "CAD_file", self.filename
+            )
             basename = os.path.basename(self.filename)
             gpkgBuilder(self.filename)
             layers = [l.GetName() for l in ogr.Open(self.filename)]
             first_layer = layers[0]
             layer_path = self.filename + "|layername={first_layer}"
-            vl = QgsVectorLayer(layer_path, basename, 'ogr')
+            vl = QgsVectorLayer(layer_path, basename, "ogr")
             conn = md.createConnection(vl.dataProvider().dataSourceUri(), {})
             md.saveConnection(conn, basename)
             iface.reloadConnections()
@@ -174,7 +184,7 @@ class CivilToolsPlugin:
             group = root.addGroup(group_name)
             for layer in layers:
                 layer_path = self.filename + f"|layername={layer}"
-                vl = QgsVectorLayer(layer_path, layer, 'ogr')
+                vl = QgsVectorLayer(layer_path, layer, "ogr")
                 project.addMapLayer(vl)
                 if not vl.isEditable():
                     vl.startEditing()
@@ -183,10 +193,18 @@ class CivilToolsPlugin:
                 group.insertChildNode(0, clone)
                 vlid.parent().removeChildNode(vlid)
                 group.setExpanded(False)
-            if QgsExpressionContextUtils.projectScope(project).variable('project_gpkg_connections'):
-                connections = QgsExpressionContextUtils.projectScope(project).variable('project_gpkg_connections')
-                connections = connections + basename + ';' + self.filename + ';'
-                QgsExpressionContextUtils.setProjectVariable(project, 'project_gpkg_connections', connections)
+            if QgsExpressionContextUtils.projectScope(project).variable(
+                "project_gpkg_connections"
+            ):
+                connections = QgsExpressionContextUtils.projectScope(project).variable(
+                    "project_gpkg_connections"
+                )
+                connections = connections + basename + ";" + self.filename + ";"
+                QgsExpressionContextUtils.setProjectVariable(
+                    project, "project_gpkg_connections", connections
+                )
             else:
-                connections = basename + ';' + self.filename + ';'
-                QgsExpressionContextUtils.setProjectVariable(project, 'gpkg_connections', connections)
+                connections = basename + ";" + self.filename + ";"
+                QgsExpressionContextUtils.setProjectVariable(
+                    project, "gpkg_connections", connections
+                )

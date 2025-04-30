@@ -1,5 +1,6 @@
 from qgis.PyQt.QtWidgets import QMenu, QAction
 
+
 def baseContextMenu(menu: QMenu):
     coord_separator = menu.addSeparator()
     repeat_action = menu.addAction("Repeat Last Command")
@@ -35,22 +36,26 @@ def baseContextMenu(menu: QMenu):
     options_action = menu.addAction("Options...")
     misc_separator = menu.addSeparator()
 
+
 def selectedContextMenu(menu: QMenu):
     prop_action = menu.addAction("Properties")
     similar_action = menu.addAction("Select Similar")
     count_action = menu.addAction("Count Selected")
     selected_separator = menu.addSeparator()
 
+
 def lineContextMenu(menu: QMenu):
     prof_action = menu.addAction("Quick Profile")
     pline_action = menu.addAction("Convert to Polyline")
     line_separator = menu.addSeparator()
+
 
 def plineContextMenu(menu: QMenu):
     prof_action = menu.addAction("Quick Profile")
     pedit_action = menu.addAction("Polyline Edit")
     close_action = menu.addAction("Close Polyline")
     pline_separator = menu.addSeparator()
+
 
 def alignContextMenu(menu: QMenu):
     align_menu = menu.addMenu("Edit Alignment")
@@ -59,12 +64,14 @@ def alignContextMenu(menu: QMenu):
     offset_action = align_menu.addAction("Create Offset Alignment")
     align_separator = menu.addSeparator()
 
+
 def surfContextMenu(menu: QMenu):
     surf_menu = menu.addMenu("Edit Surface")
     surfed_action = surf_menu.addAction("Launch Surface Editor")
     points_action = surf_menu.addAction("Edit Points")
     edges_action = surf_menu.addAction("Edit TIN Triangles")
     surf_separator = menu.addSeparator()
+
 
 def blineContextMenu(menu: QMenu):
     bl_menu = menu.addMenu("Edit Breakline")
@@ -74,6 +81,7 @@ def blineContextMenu(menu: QMenu):
     tosurf_action = bl_menu.addAction("Add Breakline to Surface")
     bl_separator = menu.addSeparator()
 
+
 def regionContextMenu(menu: QMenu):
     region_menu = menu.addMenu("Edit Grading Region")
     reged_action = region_menu.addAction("Launch Region Editor")
@@ -82,6 +90,7 @@ def regionContextMenu(menu: QMenu):
     join_action = region_menu.addAction("Join Subregions")
     subpr_action = region_menu.addAction("Edit Subregion Properties")
     region_separator = menu.addSeparator()
+
 
 def networkContextMenu(menu: QMenu):
     net_menu = menu.addMenu("Edit Pipe Network")
