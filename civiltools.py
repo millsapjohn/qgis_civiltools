@@ -40,6 +40,7 @@ class CivilToolsPlugin:
         self.draftingModeAction = QAction(
             cad_icon, "Toggle Drafting Mode", self.iface.mainWindow()
         )
+        # register a keyboard shortcut to launch drafting mode
         self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
         self.draftingModeAction.triggered.connect(self.draftingMapTool)
         self.mainMenu.addAction(self.draftingModeAction)
@@ -132,6 +133,7 @@ class CivilToolsPlugin:
 
     def draftingMapTool(self):
         project = QgsProject.instance()
+        # check if project has been initialized before launching drafting mode
         if not QgsExpressionContextUtils.projectScope(project).variable("CAD_file"):
             iface.messageBar().pushMessage("Project has not been initialized")
         elif isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
@@ -148,6 +150,7 @@ class CivilToolsPlugin:
 
     def initializeProject(self):
         project = QgsProject.instance()
+        # CivilTools only works with projected coordinate systems
         if project.crs().isGeographic() == True:
             dialog = initErrorDialog()
             dialog.exec()
@@ -164,6 +167,7 @@ class CivilToolsPlugin:
                     self.createPackage()
 
     def createPackage(self):
+        # create default CAD layers GeoPackage
         project = QgsProject.instance()
         md = QgsProviderRegistry.instance().providerMetadata("ogr")
         if self.filename:
@@ -179,6 +183,7 @@ class CivilToolsPlugin:
             conn = md.createConnection(vl.dataProvider().dataSourceUri(), {})
             md.saveConnection(conn, basename)
             iface.reloadConnections()
+            # add all CAD layers to a dedicated group
             group_name = "CAD Layers"
             root = project.layerTreeRoot()
             group = root.addGroup(group_name)
@@ -189,10 +194,15 @@ class CivilToolsPlugin:
                 if not vl.isEditable():
                     vl.startEditing()
                 vlid = root.findLayer(vl.id())
+                # adding a clone and deleting the original seems to be
+                # the best way to move between groups
                 clone = vlid.clone()
                 group.insertChildNode(0, clone)
                 vlid.parent().removeChildNode(vlid)
+                # collapse group by default to avoid cluttering the layer tree
                 group.setExpanded(False)
+            # works in concert with the Project Setup plugin, if it's been installed, 
+            # to manage persistent connections
             if QgsExpressionContextUtils.projectScope(project).variable(
                 "project_gpkg_connections"
             ):

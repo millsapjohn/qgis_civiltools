@@ -28,6 +28,7 @@ class BaseMapTool(QgsMapTool):
     def __init__(self, canvas, iface):
         self.canvas = canvas
         self.iface = iface
+        # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:
             self.box_size_raw = int(self.settings.value("CivilTools/box_size"))
@@ -43,13 +44,30 @@ class BaseMapTool(QgsMapTool):
             self.override_color = self.settings.value("CivilTools/bg_color")
         else:
             self.override_color = QgsProject.instance().backgroundColor()
+        if self.settings.value("CivilTools/cursor_color") is not None:
+            self.cursor_color = self.settings.value("CivilTools/cursor_color")
+        else:
+            self.cursor_color = QColor(255, 255, 255)
+        if self.settings.value("CivilTools/line_color") is not None:
+            self.line_color = self.settings.value("CivilTools/line_color")
+        else:
+            self.line_color = QColor(255, 255, 255)
+        if self.settings.value("CivilTools/point_color") is not None:
+            self.point_color = self.settings.value("CivilTools/point_color")
+        else:
+            self.point_color = QColor(255, 255, 255)
+        if self.settings.value("CivilTools/polygon_color") is not None:
+            self.polygon_color = self.settings.value("CivilTools/polygon_color")
+        else:
+            self.polygon_color = QColor(255, 255, 255)
         QgsMapTool.__init__(self, self.canvas)
+        # override canvas color in drafting mode
         self.canvas.setCanvasColor(self.override_color)
         self.cursor = QCursor()
         self.cursor.setShape(Qt.BlankCursor)
         self.setCursor(self.cursor)
         self.icon = QgsRubberBand(self.canvas)
-        self.icon.setColor(QColor(255, 255, 255))
+        self.icon.setColor(self.cursor_color)
         self.initx = canvas.mouseLastXY().x()
         self.inity = canvas.mouseLastXY().y()
         self.drawCursor(self.canvas, self.icon, self.initx, self.inity)
@@ -92,6 +110,7 @@ class BaseMapTool(QgsMapTool):
         self.sellayers = []
         self.cursor_bar.hide()
         self.icon.reset()
+        # TODO: figure out why this is throwing errors
         # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
@@ -165,23 +184,29 @@ class BaseMapTool(QgsMapTool):
             self.cursor_bar.hide()
 
     def getVectorLayers(self):
+        # convenience function for when we start dealing with snaps
         for layer in QgsProject.instance().layerTreeRoot().findLayers():
             if layer.isVisible() and isinstance(layer.layer(), QgsVectorLayer):
                 self.vlayers.append(layer.layer().source())
 
     def canvasPressEvent(self, event):
+        # only select one feature per click
         selected = []
         center = event.mapPoint()
+        # TODO: set this so the search radius matches the pickbox
         sel_rect = QgsRectangle(
             (center.x() - 2.0),
             (center.y() - 2.0),
             (center.x() + 2.0),
             (center.y() + 2.0),
         )
+        # calling this again so it reflects changes in layer order
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
         for layer in self.order:
+            # if a feature is selected, don't cycle more layers
             if selected != []:
                 break
+            # do nothing if a non-visible vector layer is clicked
             if layer.source() not in self.vlayers:
                 continue
             else:
@@ -194,14 +219,21 @@ class BaseMapTool(QgsMapTool):
                         self.selfeatures.append([layer.name(), id])
                         selected = [layer.name(), id]
                         break
+            # clearing and reselecting seems to be the least
+            # error-prone method
             layer.removeSelection()
             for feature in self.selfeatures:
-                layer.select(feature[1])
+                if feature[0] != layer.name():
+                    continue
+                else:
+                    layer.select(feature[1])
         if selected != []:
             if selected[0] not in self.sellayers:
                 self.sellayers.append(selected[0])
 
     def drawCursor(self, canvas, icon, pixelx, pixely):
+        # method for dynamic drawing of the cursor
+        # won't extend beyond map extents
         icon.reset()
         self.extent = canvas.extent()
         self.xmax = self.extent.xMaximum()

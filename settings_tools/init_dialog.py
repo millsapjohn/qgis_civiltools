@@ -42,6 +42,8 @@ class initDialog(QDialog):
         self.submitLayout.addWidget(self.cancelButton)
         self.mainLayout.addLayout(self.submitLayout)
 
+        # TODO: add level management template selection
+
     def getSaveFile(self):
         self.filenameDialog = QFileDialog()
         self.filename = self.filenameDialog.getSaveFileName(
