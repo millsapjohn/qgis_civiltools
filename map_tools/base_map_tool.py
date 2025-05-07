@@ -29,17 +29,17 @@ class BaseMapTool(QgsMapTool):
         self.canvas = canvas
         self.iface = iface
         self.settings = QgsSettings()
-        if self.settings.value("CivilTools/box_size") != None:
+        if self.settings.value("CivilTools/box_size") is not None:
             self.box_size_raw = int(self.settings.value("CivilTools/box_size"))
         else:
             self.box_size_raw = 10
-        if self.settings.value("CivilTools/crosshair_size") != None:
+        if self.settings.value("CivilTools/crosshair_size") is not None:
             self.crosshair_size_raw = int(
                 self.settings.value("CivilTools/crosshair_size")
             )
         else:
             self.crosshair_size_raw = 100
-        if self.settings.value("CivilTools/bg_color") != None:
+        if self.settings.value("CivilTools/bg_color") is not None:
             self.override_color = self.settings.value("CivilTools/bg_color")
         else:
             self.override_color = QgsProject.instance().backgroundColor()
@@ -49,7 +49,7 @@ class BaseMapTool(QgsMapTool):
         self.cursor.setShape(Qt.BlankCursor)
         self.setCursor(self.cursor)
         self.icon = QgsRubberBand(self.canvas)
-        self.icon.setColor(QColor(0, 0, 0))
+        self.icon.setColor(QColor(255, 255, 255))
         self.initx = canvas.mouseLastXY().x()
         self.inity = canvas.mouseLastXY().y()
         self.drawCursor(self.canvas, self.icon, self.initx, self.inity)
@@ -58,7 +58,7 @@ class BaseMapTool(QgsMapTool):
         self.last_command = ""
         self.vlayers = []  # list of visible vector layers in the project
         self.getVectorLayers()
-        self.selfeatures = {}  # dict of selected features and their layer
+        self.selfeatures = []  # list of selected features and their layer
         self.sellayers = []  # list of layers that currently have a feature selected
         self.cursor_bar = QLineEdit()
         self.cursor_bar.setParent(self.canvas)
@@ -88,17 +88,16 @@ class BaseMapTool(QgsMapTool):
         self.iface.messageBar().clearWidgets()
         self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
         self.message = ""
-        self.selfeatures = {}
+        self.selfeatures = []
         self.sellayers = []
         self.cursor_bar.hide()
         self.icon.reset()
-        self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
+        # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
         self.message = ""
         self.vlayers = []
-        self.selfeatures = {}
-        self.sellayers = []
+        self.clearSelected()
         self.cursor_bar.hide()
         self.icon.reset()
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
@@ -119,19 +118,16 @@ class BaseMapTool(QgsMapTool):
             case Qt.Key_Enter:
                 self.sendCommand()
             case Qt.Key_Escape:
-                self.reset()
+                if len(self.message) == 0:
+                    self.clearSelected()
+                else:
+                    self.message = ""
+                    self.cursor_bar.hide()
             case Qt.Key_Space:
                 self.sendCommand()
             case Qt.Key_Backspace:
                 if len(self.message) == 0:
-                    self.order = QgsProject.instance().layerTreeRoot().layerOrder()
-                    for layer in self.order:
-                        if layer.source() not in self.vlayers:
-                            continue
-                        else:
-                            ids = layer.selectedFeatureIds()
-                            for id in ids:
-                                layer.deselect(id)
+                    self.reset()
                 elif len(self.message) == 1:
                     self.message = ""
                     self.cursor_bar.hide()
@@ -143,6 +139,18 @@ class BaseMapTool(QgsMapTool):
                     self.cursor_bar.show()
                 self.message = self.message + e.text()
                 self.cursor_bar.setText(self.message)
+
+    def clearSelected(self):
+        self.order = QgsProject.instance().layerTreeRoot().layerOrder()
+        for layer in self.order:
+            if layer.source() not in self.vlayers:
+                continue
+            else:
+                ids = layer.selectedFeatureIds()
+                for id in ids:
+                    layer.deselect(id)
+        self.selfeatures = []
+        self.sellayers = []
 
     def sendCommand(self):
         if len(self.message) == 0:
@@ -175,14 +183,23 @@ class BaseMapTool(QgsMapTool):
             if selected != []:
                 break
             if layer.source() not in self.vlayers:
-                pass
+                continue
             else:
                 layer.selectByRect(sel_rect)
                 ids = layer.selectedFeatureIds()
-                if len(ids) > 1:
-                    keep = ids[0]
-                    for id in ids:
-                        layer.deselect(id)
+                for id in ids:
+                    if [layer.name(), id] in self.selfeatures:
+                        continue
+                    else:
+                        self.selfeatures.append([layer.name(), id])
+                        selected = [layer.name(), id]
+                        break
+            layer.removeSelection()
+            for feature in self.selfeatures:
+                layer.select(feature[1])
+        if selected != []:
+            if selected[0] not in self.sellayers:
+                self.sellayers.append(selected[0])
 
     def drawCursor(self, canvas, icon, pixelx, pixely):
         icon.reset()
