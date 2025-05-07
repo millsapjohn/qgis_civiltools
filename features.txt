@@ -1,5 +1,7 @@
-setting to toggle layers/change background/change cursor color when toggling drafting mode
 command to hide all annotations
+add layer to snapping exclusion
+autosave
+when installing, option to import styles, expressions, scripts, etc
 
 Arc
 - start
