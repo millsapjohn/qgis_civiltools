@@ -144,7 +144,7 @@ class BaseMapTool(QgsMapTool):
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
 
-    def keyPressEvent(self, e):
+    def keyReleaseEvent(self, e):
         e.ignore()
         match e.key():
             case Qt.Key_Return:
@@ -168,6 +168,19 @@ class BaseMapTool(QgsMapTool):
                 else:
                     self.message = self.message[:-1]
                     self.cursor_bar.setText(self.message)
+            case Qt.Key_Shift:
+                pass
+            case Qt.Key_Control:
+                pass
+            # TODO: figure out why Alt isn't being ignored
+            case Qt.Key_Alt:
+                pass
+            case Qt.Key_AltGr:
+                pass
+            case Qt.Key_Super_L:
+                pass
+            case Qt.Key_Super_R:
+                pass
             case _:
                 if self.message == "":
                     self.cursor_bar.show()
