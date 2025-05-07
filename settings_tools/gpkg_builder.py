@@ -22,7 +22,7 @@ def gpkgBuilder(gpkg_path):
         QgsVectorLayer("LineString", "cad_dimension_lines", "memory"),
     ]
 
-    layer = QgsVectorLayer("Point", "points", "memory")
+    layer = QgsVectorLayer("Point", "cad_points", "memory")
     layer.setCrs(crs)
     provider = layer.dataProvider()
     provider.addAttributes(
