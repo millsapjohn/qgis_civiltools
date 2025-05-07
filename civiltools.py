@@ -10,7 +10,6 @@ from osgeo import ogr
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
 from .settings_tools.options import CivilToolsOptionsFactory
-from .resources.cursor_builder import CTCursor
 from .resources.icons import *
 from .map_tools.base_map_tool import BaseMapTool
 from qgis.gui import QgsMapToolPan

@@ -18,8 +18,8 @@ from qgis.core import (
     QgsLineString,
     QgsPoint,
     QgsGeometry,
+    Qgis,
 )
-from ..resources.cursor_builder import CTCursor
 from .context_menus import baseContextMenu
 import os
 
@@ -75,7 +75,18 @@ class BaseMapTool(QgsMapTool):
         self.message = ""  # string to display next to cursor
         self.last_command = ""
         self.vlayers = []  # list of visible vector layers in the project
+        self.non_cad_layers = [] # list of visible non-CAD layers in the project (for style override)
         self.getVectorLayers()
+        for entry in self.non_cad_layers:
+            if entry[0].geometryType() == Qgis.GeometryType.Point:
+                entry[0].renderer().symbol().setColor(self.point_color)
+                entry[0].triggerRepaint()
+            elif entry[0].geometryType() == Qgis.GeometryType.Line:
+                entry[0].renderer().symbol().setColor(self.line_color)
+                entry[0].triggerRepaint()
+            elif entry[0].geometryType() == Qgis.GeometryType.Polygon:
+                entry[0].renderer().symbol().setColor(self.polygon_color)
+                entry[0].triggerRepaint()
         self.selfeatures = []  # list of selected features and their layer
         self.sellayers = []  # list of layers that currently have a feature selected
         self.cursor_bar = QLineEdit()
@@ -116,6 +127,10 @@ class BaseMapTool(QgsMapTool):
     def deactivate(self):
         self.message = ""
         self.vlayers = []
+        for entry in self.non_cad_layers:
+            entry[0].renderer().symbol().setColor(entry[1])
+            entry[0].triggerRepaint()
+        self.non_cad_layers = []
         self.clearSelected()
         self.cursor_bar.hide()
         self.icon.reset()
@@ -187,7 +202,11 @@ class BaseMapTool(QgsMapTool):
         # convenience function for when we start dealing with snaps
         for layer in QgsProject.instance().layerTreeRoot().findLayers():
             if layer.isVisible() and isinstance(layer.layer(), QgsVectorLayer):
-                self.vlayers.append(layer.layer().source())
+                if layer.layer().geometryType() != Qgis.GeometryType.Null:
+                    self.vlayers.append(layer.layer().source())
+                    if "cad" not in layer.layer().name():
+                        color = layer.layer().renderer().symbol().color()
+                        self.non_cad_layers.append([layer.layer(), color])
 
     def canvasPressEvent(self, event):
         # only select one feature per click
