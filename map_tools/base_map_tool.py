@@ -1,18 +1,15 @@
 # TODO: figure out how to override Tab keyboard shortcut
 
 from qgis.gui import (
-    QgsMapCanvas,
-    QgsMapMouseEvent,
     QgsRubberBand,
     QgsMapTool,
 )
-from qgis.PyQt.QtGui import QKeyEvent, QColor, QCursor
-from qgis.PyQt.QtCore import Qt, QPoint, QEvent
-from qgis.PyQt.QtWidgets import QLineEdit, QMenu, QAction
+from qgis.PyQt.QtGui import QColor, QCursor
+from qgis.PyQt.QtCore import Qt, QPoint
+from qgis.PyQt.QtWidgets import QLineEdit
 from qgis.core import (
     QgsProject,
     QgsVectorLayer,
-    QgsMapLayer,
     QgsRectangle,
     QgsSettings,
     QgsLineString,
@@ -21,7 +18,7 @@ from qgis.core import (
     Qgis,
 )
 from .context_menus import baseContextMenu
-import os
+from .key_validator import keyValidator, Commands
 
 
 class BaseMapTool(QgsMapTool):
@@ -198,6 +195,13 @@ class BaseMapTool(QgsMapTool):
                     layer.deselect(id)
         self.selfeatures = []
         self.sellayers = []
+
+    def matchCommand(self, str):
+        result = keyValidator(str)
+        if result[0] == False:
+            pass
+        else:
+            matches = result[1]
 
     def sendCommand(self):
         if len(self.message) == 0:
