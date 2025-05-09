@@ -14,12 +14,13 @@ def keyValidator(str):
         if str in command.name and command.name != raw_match:
             matches.append(f'{command.value}' + ' (' + f'{command.name}' + ')')
     if len(matches) == 0:
-        return (False, [])
+        result = (False, [])
     elif len(matches) > 4:
         matches = matches[0:4]
-        return (True, matches)
+        result = (True, matches)
     else:
-        return (True, matches)
+        result = (True, matches)
+    return result
 
 
 class Commands(Enum):

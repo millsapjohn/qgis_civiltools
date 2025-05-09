@@ -181,7 +181,7 @@ class BaseMapTool(QgsMapTool):
             case _:
                 if self.message == "":
                     self.cursor_bar.show()
-                self.message = self.message + e.text()
+                self.message = self.message + e.text().upper()
                 self.cursor_bar.setText(self.message)
 
     def clearSelected(self):
@@ -199,9 +199,10 @@ class BaseMapTool(QgsMapTool):
     def matchCommand(self, str):
         result = keyValidator(str)
         if result[0] == False:
-            pass
+            matches = []
         else:
             matches = result[1]
+        return matches
 
     def sendCommand(self):
         if len(self.message) == 0:
@@ -210,7 +211,8 @@ class BaseMapTool(QgsMapTool):
             else:
                 self.iface.messageBar().pushMessage(self.last_command)
         else:
-            self.iface.messageBar().pushMessage(self.message)
+            matches = self.matchCommand(self.message)
+            self.iface.messageBar().pushMessage(str(matches))
             self.last_command = self.message
             self.message = ""
             self.cursor_bar.hide()
