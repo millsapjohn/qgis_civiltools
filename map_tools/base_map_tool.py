@@ -4,7 +4,7 @@ from qgis.gui import (
     QgsRubberBand,
     QgsMapTool,
 )
-from qgis.PyQt.QtGui import QColor, QCursor
+from qgis.PyQt.QtGui import QColor, QCursor, QAction
 from qgis.PyQt.QtCore import Qt, QPoint
 from qgis.PyQt.QtWidgets import QLineEdit, QTableWidget, QTableWidgetItem
 from qgis.core import (
@@ -108,6 +108,10 @@ class BaseMapTool(QgsMapTool):
                 (self.canvas.mouseLastXY().y() + 10),
             )
         )
+        self.bsp_action = QAction("backspace override", self)
+        self.bsp_action.setShortcut(Qt.Key_Backspace)
+        self.bsp_action.triggered.connect(self.handle_child_shortcuts)
+        self.canvas.addAction(self.bsp_action)
 
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
@@ -162,8 +166,7 @@ class BaseMapTool(QgsMapTool):
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
 
-    def keyReleaseEvent(self, e):
-        e.ignore()
+    def keyPressEvent(self, e):
         match e.key():
             case Qt.Key_Return:
                 self.sendCommand()
@@ -178,17 +181,6 @@ class BaseMapTool(QgsMapTool):
                     self.hint_table.hide()
             case Qt.Key_Space:
                 self.sendCommand()
-            case Qt.Key_Backspace:
-                if len(self.message) == 0:
-                    self.reset()
-                elif len(self.message) == 1:
-                    self.message = ""
-                    self.cursor_bar.hide()
-                    self.hint_table.hide()
-                else:
-                    self.message = self.message[:-1]
-                    self.cursor_bar.setText(self.message)
-                    self.drawHints()
             case Qt.Key_Shift:
                 pass
             case Qt.Key_Control:
@@ -208,6 +200,18 @@ class BaseMapTool(QgsMapTool):
                 self.message = self.message + e.text().upper()
                 self.cursor_bar.setText(self.message)
                 self.drawHints()
+
+    def handle_child_shortcuts(self):
+        if len(self.message) == 0:
+            self.reset()
+        elif len(self.message) == 1:
+            self.message = ""
+            self.cursor_bar.hide()
+            self.hint_table.hide()
+        else:
+            self.message = self.message[:-1]
+            self.cursor_bar.setText(self.message)
+            self.drawHints()
 
     def clearSelected(self):
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
