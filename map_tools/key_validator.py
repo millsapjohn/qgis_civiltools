@@ -7,12 +7,16 @@ def keyValidator(str):
     # match command shortcut first
     for command in Commands:
         if str == command.value:
-            raw_match = command.name
-            matches.append(f'{command.value}' + " (" + f'{command.name}' + ")")
+            raw_match = command.value
+            matches.append([command.value, command.name])
     # if other commands contain the string, add them to list of matches
     for command in Commands:
-        if str in command.name and command.name != raw_match:
-            matches.append(f'{command.value}' + ' (' + f'{command.name}' + ')')
+        if str in command.value and command.value != raw_match:
+            matches.append([command.value, command.name])
+            continue
+        if str in command.name and command.value != raw_match:
+            if [command.value, command.name] not in matches:
+                matches.append([command.value, command.name])
     if len(matches) == 0:
         result = (False, [])
     elif len(matches) > 4:

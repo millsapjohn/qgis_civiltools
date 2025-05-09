@@ -6,7 +6,7 @@ from qgis.gui import (
 )
 from qgis.PyQt.QtGui import QColor, QCursor
 from qgis.PyQt.QtCore import Qt, QPoint
-from qgis.PyQt.QtWidgets import QLineEdit
+from qgis.PyQt.QtWidgets import QLineEdit, QTableWidget, QTableWidgetItem
 from qgis.core import (
     QgsProject,
     QgsVectorLayer,
@@ -18,7 +18,7 @@ from qgis.core import (
     Qgis,
 )
 from .context_menus import baseContextMenu
-from .key_validator import keyValidator, Commands
+from .key_validator import keyValidator
 
 
 class BaseMapTool(QgsMapTool):
@@ -87,6 +87,19 @@ class BaseMapTool(QgsMapTool):
         self.selfeatures = []  # list of selected features and their layer
         self.sellayers = []  # list of layers that currently have a feature selected
         self.cursor_bar = QLineEdit()
+        self.hint_table = QTableWidget()
+        self.hint_table.setColumnCount(2)
+        self.hint_table.setFixedHeight(124)
+        self.hint_table.setFixedWidth(236)
+        self.hint_table.verticalHeader().setVisible(False)
+        self.hint_table.horizontalHeader().setVisible(False)
+        self.hint_table.setParent(self.canvas)
+        self.hint_table.move(
+            QPoint(
+                (self.canvas.mouseLastXY().x() + 90),
+                (self.canvas.mouseLastXY().y() + 10),
+            )
+        )
         self.cursor_bar.setParent(self.canvas)
         self.cursor_bar.resize(80, 20)
         self.cursor_bar.move(
@@ -117,6 +130,7 @@ class BaseMapTool(QgsMapTool):
         self.selfeatures = []
         self.sellayers = []
         self.cursor_bar.hide()
+        self.hint_table.hide()
         self.icon.reset()
         # TODO: figure out why this is throwing errors
         # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
@@ -130,6 +144,7 @@ class BaseMapTool(QgsMapTool):
         self.non_cad_layers = []
         self.clearSelected()
         self.cursor_bar.hide()
+        self.hint_table.hide()
         self.icon.reset()
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
         QgsMapTool.deactivate(self)
@@ -137,6 +152,12 @@ class BaseMapTool(QgsMapTool):
 
     def canvasMoveEvent(self, e):
         self.drawCursor(self.canvas, self.icon, e.pixelPoint().x(), e.pixelPoint().y())
+        self.hint_table.move(
+            QPoint(
+                (e.pixelPoint().x() + 90),
+                (e.pixelPoint().y() + 10)
+            )
+        )
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
@@ -154,6 +175,7 @@ class BaseMapTool(QgsMapTool):
                 else:
                     self.message = ""
                     self.cursor_bar.hide()
+                    self.hint_table.hide()
             case Qt.Key_Space:
                 self.sendCommand()
             case Qt.Key_Backspace:
@@ -162,9 +184,11 @@ class BaseMapTool(QgsMapTool):
                 elif len(self.message) == 1:
                     self.message = ""
                     self.cursor_bar.hide()
+                    self.hint_table.hide()
                 else:
                     self.message = self.message[:-1]
                     self.cursor_bar.setText(self.message)
+                    self.drawHints()
             case Qt.Key_Shift:
                 pass
             case Qt.Key_Control:
@@ -183,6 +207,7 @@ class BaseMapTool(QgsMapTool):
                     self.cursor_bar.show()
                 self.message = self.message + e.text().upper()
                 self.cursor_bar.setText(self.message)
+                self.drawHints()
 
     def clearSelected(self):
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
@@ -195,6 +220,18 @@ class BaseMapTool(QgsMapTool):
                     layer.deselect(id)
         self.selfeatures = []
         self.sellayers = []
+
+    def drawHints(self):
+        self.hint_table.clearContents()
+        matches = self.matchCommand(self.message)
+        no_matches = len(matches)
+        self.hint_table.setRowCount(no_matches)
+        for i in range(no_matches):
+            self.hint_table.setItem(i, 0, QTableWidgetItem(matches[i][0]))
+            self.hint_table.setItem(i, 1, QTableWidgetItem(matches[i][1]))
+        self.hint_table.resizeColumnToContents(0)
+        self.hint_table.resizeColumnToContents(1)
+        self.hint_table.show()
 
     def matchCommand(self, str):
         result = keyValidator(str)
@@ -216,6 +253,7 @@ class BaseMapTool(QgsMapTool):
             self.last_command = self.message
             self.message = ""
             self.cursor_bar.hide()
+            self.hint_table.hide()
 
     def getVectorLayers(self):
         # convenience function for when we start dealing with snaps
