@@ -32,6 +32,11 @@ class BaseMapTool(QgsMapTool):
         self.arrow_left_action = None
         self.arrow_right_action = None
         self.hint_selected = None
+        self.is_dragging = False
+        self.is_dragged = False
+        self.sel_band = QgsRubberBand(self.canvas)
+        # TODO: make this a setting
+        self.sel_band.setStrokeColor(QColor(0, 18, 255))
         # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:
@@ -172,6 +177,7 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.hide()
         self.hint_table.hide()
         self.icon.reset()
+        self.is_dragged = False
         # TODO: figure out why this is throwing errors
         # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
@@ -217,6 +223,8 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
+        if self.is_dragging == True:
+            self.drawSelector(self.first_loc, e.mapPoint())
 
     def keyPressEvent(self, e):
         match e.key():
@@ -373,19 +381,31 @@ class BaseMapTool(QgsMapTool):
                         self.non_cad_layers.append([layer.layer(), color])
 
     def canvasPressEvent(self, event):
-        # only select one feature per click
-        selected = []
-        center = event.mapPoint()
-        # TODO: set this so the search radius matches the pickbox
-        sel_rect = QgsRectangle(
-            (center.x() - 2.0),
-            (center.y() - 2.0),
-            (center.x() + 2.0),
-            (center.y() + 2.0),
-        )
-        # calling this again so it reflects changes in layer order
+        self.first_loc = event.mapPoint()
+        self.is_dragging = True
+                
+    def canvasReleaseEvent(self, event):
+        self.second_loc = event.mapPoint()
+        self.sel_band.reset()
+        self.is_dragging = False
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
-        for layer in self.order:
+        selected = []
+        if self.second_loc != self.first_loc:
+            sel_rect = QgsRectangle(self.first_loc, self.second_loc)
+            self.selectAll(self.order, sel_rect)
+        else:
+            sel_rect = QgsRectangle(
+                (self.second_loc.x() - (self.box_size_raw / 2)),
+                (self.second_loc.y() - (self.box_size_raw / 2)),
+                (self.second_loc.x() + (self.box_size_raw / 2)),
+                (self.second_loc.y() + (self.box_size_raw / 2))
+            )
+            self.selectOne(self.order, sel_rect)
+        self.first_loc = self.second_loc
+
+    def selectOne(self, order, rect):
+        selected = []
+        for layer in order:
             # if a feature is selected, don't cycle more layers
             if selected != []:
                 break
@@ -393,7 +413,7 @@ class BaseMapTool(QgsMapTool):
             if layer.source() not in self.vlayers:
                 continue
             else:
-                layer.selectByRect(sel_rect)
+                layer.selectByRect(rect)
                 ids = layer.selectedFeatureIds()
                 for id in ids:
                     if [layer.name(), id] in self.selfeatures:
@@ -412,8 +432,26 @@ class BaseMapTool(QgsMapTool):
                     layer.select(feature[1])
         if selected != []:
             if selected[0] not in self.sellayers:
-                self.sellayers.append(selected[0])
+                self.sellayers.append(selected[0])       
 
+    def selectAll(self, order, rect):
+        for layer in order:
+            if layer.source() not in self.vlayers:
+                continue
+            else:
+                layer.selectByRect(rect)
+                ids = layer.selectedFeatureIds()
+                for id in ids:
+                    if [layer.name(), id] in self.selfeatures:
+                        continue
+                    else:
+                        self.selfeatures.append([layer.name(), id])
+                self.sellayers.append(layer.name())
+
+    def drawSelector(self, first_point, second_point):
+        self.sel_band.reset()
+        self.sel_band.addGeometry(QgsGeometry().fromRect(QgsRectangle(first_point, second_point)))
+    
     def drawCursor(self, canvas, icon, pixelx, pixely):
         # method for dynamic drawing of the cursor
         # won't extend beyond map extents
