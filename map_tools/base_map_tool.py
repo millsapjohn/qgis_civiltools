@@ -27,6 +27,9 @@ class BaseMapTool(QgsMapTool):
         self.iface = iface
         # delete shortcuts before reinitializing
         self.bsp_action = None
+        self.arrow_down_action = None
+        self.arrow_up_action = None
+        self.hint_selected = None
         # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:
@@ -73,6 +76,7 @@ class BaseMapTool(QgsMapTool):
         self.flags()
         self.message = ""  # string to display next to cursor
         self.last_command = ""
+        self.hint_selected = None
         self.vlayers = []  # list of visible vector layers in the project
         self.non_cad_layers = [] # list of visible non-CAD layers in the project (for style override)
         self.getVectorLayers()
@@ -118,6 +122,20 @@ class BaseMapTool(QgsMapTool):
             self.canvas.addAction(self.bsp_action)
         elif self.bsp_action not in self.canvas.actions():
             self.canvas.addAction(self.bsp_action)        
+        if not self.arrow_down_action:
+            self.arrow_down_action = QAction(self.canvas)
+            self.arrow_down_action.setShortcut(Qt.Key_Down)
+            self.arrow_down_action.triggered.connect(self.handleDownArrow)
+            self.canvas.addAction(self.arrow_down_action)
+        elif self.arrow_down_action not in self.canvas.actions():
+            self.canvas.addAction(self.arrow_down_action)
+        if not self.arrow_up_action:
+            self.arrow_up_action = QAction(self.canvas)
+            self.arrow_up_action.setShortcut(Qt.Key_Up)
+            self.arrow_up_action.triggered.connect(self.handleUpArrow)
+            self.canvas.addAction(self.arrow_up_action)
+        elif self.arrow_up_action not in self.canvas.actions():
+            self.canvas.addAction(self.arrow_up_action)
                     
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
@@ -149,6 +167,12 @@ class BaseMapTool(QgsMapTool):
         if self.bsp_action and self.bsp_action in self.canvas.actions():
             self.bsp_action.triggered.disconnect(self.handleBackspace)
             self.canvas.removeAction(self.bsp_action)
+        if self.arrow_down_action and self.arrow_down_action in self.canvas.actions():
+            self.arrow_down_action.triggered.disconnect(self.handleDownArrow)
+            self.canvas.removeAction(self.arrow_down_action)
+        if self.arrow_up_action and self.arrow_up_action in self.canvas.actions():
+            self.arrow_up_action.triggered.disconnect(self.handleUpArrow)
+            self.canvas.removeAction(self.arrow_up_action)
         self.message = ""
         self.vlayers = []
         for entry in self.non_cad_layers:
@@ -158,6 +182,7 @@ class BaseMapTool(QgsMapTool):
         self.clearSelected()
         self.cursor_bar.hide()
         self.hint_table.hide()
+        self.hint_selected = None
         self.icon.reset()
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
         QgsMapTool.deactivate(self)
@@ -213,6 +238,62 @@ class BaseMapTool(QgsMapTool):
             self.cursor_bar.setText(self.message)
             self.drawHints()
 
+    def handleUpArrow(self):
+        if self.hint_table.isHidden == True:
+            pass
+        elif self.no_matches == 0:
+            pass
+        elif self.no_matches == 1:
+            self.hint_table.item(0, 0).setSelected(True)
+            self.hint_table.item(0, 1).setSelected(True)
+            self.hint_selected = 0
+            self.message = self.hint_table.item(0, 0).text()
+            self.cursor_bar.setText(self.message)
+        else:
+            if self.hint_selected == None:
+                self.hint_selected = 0
+            else:
+                raw_hint = self.hint_selected - 1
+                if raw_hint < 0:
+                    self.hint_selected = self.no_matches - 1
+                else:
+                    self.hint_selected = raw_hint
+            for i in range(self.no_matches):
+                self.hint_table.item(i, 0).setSelected(False)
+                self.hint_table.item(i, 1).setSelected(False)
+            self.hint_table.item(self.hint_selected, 0).setSelected(True)
+            self.hint_table.item(self.hint_selected, 1).setSelected(True)
+            self.message = self.hint_table.item(self.hint_selected, 0).text()
+            self.cursor_bar.setText(self.message)
+
+    def handleDownArrow(self):
+        if self.hint_table.isHidden == True:
+            pass
+        elif self.no_matches == 0:
+            pass
+        elif self.no_matches == 1:
+            self.hint_table.item(0, 0).setSelected(True)
+            self.hint_table.item(0, 1).setSelected(True)
+            self.hint_selected = 0
+            self.message = self.hint_table.item(0, 0).text()
+            self.cursor_bar.setText(self.message)
+        else:
+            if self.hint_selected == None:
+                self.hint_selected = 0
+            else:
+                raw_hint = self.hint_selected + 1
+                if raw_hint >= self.no_matches:
+                    self.hint_selected = 0
+                else:
+                    self.hint_selected = raw_hint
+            for i in range(self.no_matches):
+                self.hint_table.item(i, 0).setSelected(False)
+                self.hint_table.item(i, 1).setSelected(False)
+            self.hint_table.item(self.hint_selected, 0).setSelected(True)
+            self.hint_table.item(self.hint_selected, 1).setSelected(True)
+            self.message = self.hint_table.item(self.hint_selected, 0).text()
+            self.cursor_bar.setText(self.message)
+            
     def clearSelected(self):
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
         for layer in self.order:
@@ -227,14 +308,15 @@ class BaseMapTool(QgsMapTool):
 
     def drawHints(self):
         self.hint_table.clearContents()
-        matches = self.matchCommand(self.message)
-        no_matches = len(matches)
-        self.hint_table.setRowCount(no_matches)
-        for i in range(no_matches):
-            self.hint_table.setItem(i, 0, QTableWidgetItem(matches[i][0]))
-            self.hint_table.setItem(i, 1, QTableWidgetItem(matches[i][1]))
+        self.matches = self.matchCommand(self.message)
+        self.no_matches = len(self.matches)
+        self.hint_table.setRowCount(self.no_matches)
+        for i in range(self.no_matches):
+            self.hint_table.setItem(i, 0, QTableWidgetItem(self.matches[i][0]))
+            self.hint_table.setItem(i, 1, QTableWidgetItem(self.matches[i][1]))
         self.hint_table.resizeColumnToContents(0)
         self.hint_table.resizeColumnToContents(1)
+        self.hint_selected = None
         self.hint_table.show()
 
     def matchCommand(self, str):
