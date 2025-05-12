@@ -25,6 +25,8 @@ class BaseMapTool(QgsMapTool):
     def __init__(self, canvas, iface):
         self.canvas = canvas
         self.iface = iface
+        # delete shortcuts before reinitializing
+        self.bsp_action = None
         # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:
@@ -108,11 +110,15 @@ class BaseMapTool(QgsMapTool):
                 (self.canvas.mouseLastXY().y() + 10),
             )
         )
-        self.bsp_action = QAction("backspace override", self)
-        self.bsp_action.setShortcut(Qt.Key_Backspace)
-        self.bsp_action.triggered.connect(self.handle_child_shortcuts)
-        self.canvas.addAction(self.bsp_action)
-
+        # reinitialize shortcuts
+        if not self.bsp_action:
+            self.bsp_action = QAction(self.canvas)
+            self.bsp_action.setShortcut(Qt.Key_Backspace)
+            self.bsp_action.triggered.connect(self.handleBackspace)
+            self.canvas.addAction(self.bsp_action)
+        elif self.bsp_action not in self.canvas.actions():
+            self.canvas.addAction(self.bsp_action)        
+                    
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
             pass
@@ -140,6 +146,9 @@ class BaseMapTool(QgsMapTool):
         # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
+        if self.bsp_action and self.bsp_action in self.canvas.actions():
+            self.bsp_action.triggered.disconnect(self.handleBackspace)
+            self.canvas.removeAction(self.bsp_action)
         self.message = ""
         self.vlayers = []
         for entry in self.non_cad_layers:
@@ -185,15 +194,6 @@ class BaseMapTool(QgsMapTool):
                 pass
             case Qt.Key_Control:
                 pass
-            # TODO: figure out why Alt isn't being ignored
-            case Qt.Key_Alt:
-                pass
-            case Qt.Key_AltGr:
-                pass
-            case Qt.Key_Super_L:
-                pass
-            case Qt.Key_Super_R:
-                pass
             case _:
                 if self.message == "":
                     self.cursor_bar.show()
@@ -201,7 +201,7 @@ class BaseMapTool(QgsMapTool):
                 self.cursor_bar.setText(self.message)
                 self.drawHints()
 
-    def handle_child_shortcuts(self):
+    def handleBackspace(self):
         if len(self.message) == 0:
             self.reset()
         elif len(self.message) == 1:
