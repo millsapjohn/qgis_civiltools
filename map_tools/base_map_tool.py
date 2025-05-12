@@ -29,6 +29,8 @@ class BaseMapTool(QgsMapTool):
         self.bsp_action = None
         self.arrow_down_action = None
         self.arrow_up_action = None
+        self.arrow_left_action = None
+        self.arrow_right_action = None
         self.hint_selected = None
         # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
@@ -136,6 +138,16 @@ class BaseMapTool(QgsMapTool):
             self.canvas.addAction(self.arrow_up_action)
         elif self.arrow_up_action not in self.canvas.actions():
             self.canvas.addAction(self.arrow_up_action)
+        if not self.arrow_left_action:
+            self.arrow_left_action = QAction(self.canvas)
+            self.arrow_left_action.setShortcut(Qt.Key_Left)
+            self.arrow_left_action.triggered.connect(self.handleHorizontal)
+            self.canvas.addAction(self.arrow_left_action)
+        if not self.arrow_right_action:
+            self.arrow_right_action = QAction(self.canvas)
+            self.arrow_right_action.setShortcut(Qt.Key_Right)
+            self.arrow_right_action.triggered.connect(self.handleHorizontal)
+            self.canvas.addAction(self.arrow_right_action)
                     
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
@@ -173,6 +185,12 @@ class BaseMapTool(QgsMapTool):
         if self.arrow_up_action and self.arrow_up_action in self.canvas.actions():
             self.arrow_up_action.triggered.disconnect(self.handleUpArrow)
             self.canvas.removeAction(self.arrow_up_action)
+        if self.arrow_left_action and self.arrow_left_action in self.canvas.actions():
+            self.arrow_left_action.triggered.disconnect(self.handleHorizontal)
+            self.canvas.removeAction(self.arrow_left_action)
+        if self.arrow_right_action and self.arrow_right_action in self.canvas.actions():
+            self.arrow_right_action.triggered.disconnect(self.handleHorizontal)
+            self.canvas.removeAction(self.arrow_right_action)
         self.message = ""
         self.vlayers = []
         for entry in self.non_cad_layers:
@@ -237,6 +255,9 @@ class BaseMapTool(QgsMapTool):
             self.message = self.message[:-1]
             self.cursor_bar.setText(self.message)
             self.drawHints()
+
+    def handleHorizontal(self):
+        pass
 
     def handleUpArrow(self):
         if self.hint_table.isHidden == True:
