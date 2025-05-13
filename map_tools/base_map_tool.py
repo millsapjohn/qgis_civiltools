@@ -85,7 +85,7 @@ class BaseMapTool(QgsMapTool):
         self.last_command = ""
         self.hint_selected = None
         self.vlayers = []  # list of visible vector layers in the project
-        self.non_cad_layers = [] # list of visible non-CAD layers in the project (for style override)
+        self.non_cad_layers = []  # list of visible non-CAD layers (for style override)
         self.getVectorLayers()
         for entry in self.non_cad_layers:
             if entry[0].geometryType() == Qgis.GeometryType.Point:
@@ -128,7 +128,7 @@ class BaseMapTool(QgsMapTool):
             self.bsp_action.triggered.connect(self.handleBackspace)
             self.canvas.addAction(self.bsp_action)
         elif self.bsp_action not in self.canvas.actions():
-            self.canvas.addAction(self.bsp_action)        
+            self.canvas.addAction(self.bsp_action)
         if not self.arrow_down_action:
             self.arrow_down_action = QAction(self.canvas)
             self.arrow_down_action.setShortcut(Qt.Key_Down)
@@ -153,7 +153,7 @@ class BaseMapTool(QgsMapTool):
             self.arrow_right_action.setShortcut(Qt.Key_Right)
             self.arrow_right_action.triggered.connect(self.handleHorizontal)
             self.canvas.addAction(self.arrow_right_action)
-                    
+
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
             pass
@@ -178,6 +178,7 @@ class BaseMapTool(QgsMapTool):
         self.hint_table.hide()
         self.icon.reset()
         self.is_dragged = False
+        self.clearSelected()
         # TODO: figure out why this is throwing errors
         # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
@@ -223,7 +224,7 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
-        if self.is_dragging == True:
+        if self.is_dragging is True:
             self.drawSelector(self.first_loc, e.mapPoint())
 
     def keyPressEvent(self, e):
@@ -268,7 +269,7 @@ class BaseMapTool(QgsMapTool):
         pass
 
     def handleUpArrow(self):
-        if self.hint_table.isHidden == True:
+        if self.hint_table.isHidden:
             pass
         elif self.no_matches == 0:
             pass
@@ -279,7 +280,7 @@ class BaseMapTool(QgsMapTool):
             self.message = self.hint_table.item(0, 0).text()
             self.cursor_bar.setText(self.message)
         else:
-            if self.hint_selected == None:
+            if self.hint_selected is None:
                 self.hint_selected = 0
             else:
                 raw_hint = self.hint_selected - 1
@@ -296,7 +297,7 @@ class BaseMapTool(QgsMapTool):
             self.cursor_bar.setText(self.message)
 
     def handleDownArrow(self):
-        if self.hint_table.isHidden == True:
+        if self.hint_table.isHidden:
             pass
         elif self.no_matches == 0:
             pass
@@ -307,7 +308,7 @@ class BaseMapTool(QgsMapTool):
             self.message = self.hint_table.item(0, 0).text()
             self.cursor_bar.setText(self.message)
         else:
-            if self.hint_selected == None:
+            if self.hint_selected is None:
                 self.hint_selected = 0
             else:
                 raw_hint = self.hint_selected + 1
@@ -322,16 +323,9 @@ class BaseMapTool(QgsMapTool):
             self.hint_table.item(self.hint_selected, 1).setSelected(True)
             self.message = self.hint_table.item(self.hint_selected, 0).text()
             self.cursor_bar.setText(self.message)
-            
+
     def clearSelected(self):
-        self.order = QgsProject.instance().layerTreeRoot().layerOrder()
-        for layer in self.order:
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                ids = layer.selectedFeatureIds()
-                for id in ids:
-                    layer.deselect(id)
+        self.iface.mainWindow().findChild(QAction, 'mActionDeselectAll').trigger()
         self.selfeatures = []
         self.sellayers = []
 
@@ -350,7 +344,7 @@ class BaseMapTool(QgsMapTool):
 
     def matchCommand(self, str):
         result = keyValidator(str)
-        if result[0] == False:
+        if result[0] is False:
             matches = []
         else:
             matches = result[1]
@@ -382,17 +376,33 @@ class BaseMapTool(QgsMapTool):
 
     def canvasPressEvent(self, event):
         self.first_loc = event.mapPoint()
+        self.first_loc_pixel = event.pixelPoint()
         self.is_dragging = True
-                
+
     def canvasReleaseEvent(self, event):
         self.second_loc = event.mapPoint()
+        self.second_loc_pixel = event.pixelPoint()
         self.sel_band.reset()
         self.is_dragging = False
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
-        selected = []
         if self.second_loc != self.first_loc:
             sel_rect = QgsRectangle(self.first_loc, self.second_loc)
             self.selectAll(self.order, sel_rect)
+            # if dragging to the right, only select features entirely contained in band
+            if self.second_loc_pixel.x() > self.first_loc_pixel.x():
+                sel_geom = QgsGeometry().fromRect(sel_rect)
+                for layer in self.sellayers:
+                    map_layer = QgsProject.instance().mapLayersByName(layer)[0]
+                    sel_features = map_layer.selectedFeatures()
+                    if sel_features == []:
+                        continue
+                    else:
+                        for feature in sel_features:
+                            if sel_geom.crosses(feature.geometry()):
+                                map_layer.deselect(feature.id())
+                    sel_features = map_layer.selectedFeatures()
+                    if sel_features == []:
+                        self.sellayers.remove(layer)
         else:
             sel_rect = QgsRectangle(
                 (self.second_loc.x() - (self.box_size_raw / 2)),
@@ -413,7 +423,7 @@ class BaseMapTool(QgsMapTool):
             if layer.source() not in self.vlayers:
                 continue
             else:
-                layer.selectByRect(rect)
+                layer.selectByRect(rect, Qgis.SelectBehavior.AddToSelection)
                 ids = layer.selectedFeatureIds()
                 for id in ids:
                     if [layer.name(), id] in self.selfeatures:
@@ -432,14 +442,14 @@ class BaseMapTool(QgsMapTool):
                     layer.select(feature[1])
         if selected != []:
             if selected[0] not in self.sellayers:
-                self.sellayers.append(selected[0])       
+                self.sellayers.append(selected[0])
 
     def selectAll(self, order, rect):
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
             else:
-                layer.selectByRect(rect)
+                layer.selectByRect(rect, Qgis.SelectBehavior.AddToSelection)
                 ids = layer.selectedFeatureIds()
                 for id in ids:
                     if [layer.name(), id] in self.selfeatures:
@@ -451,7 +461,7 @@ class BaseMapTool(QgsMapTool):
     def drawSelector(self, first_point, second_point):
         self.sel_band.reset()
         self.sel_band.addGeometry(QgsGeometry().fromRect(QgsRectangle(first_point, second_point)))
-    
+
     def drawCursor(self, canvas, icon, pixelx, pixely):
         # method for dynamic drawing of the cursor
         # won't extend beyond map extents
