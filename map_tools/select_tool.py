@@ -33,7 +33,7 @@ class SelectMapTool(QgsMapTool):
         self.arrow_right_action = None
         self.hint_selected = None
         self.is_dragging = False
-        self.is_dragged = False
+        self.press_success = False
         self.shift_modified = False
         self.ctrl_modified = False
         self.is_tracing = False
@@ -243,7 +243,14 @@ class SelectMapTool(QgsMapTool):
                 self.sendCommand()
             case Qt.Key_Escape:
                 if len(self.message) == 0:
-                    self.clearSelected()
+                    if self.is_dragging == True:
+                        self.is_dragging = False
+                        self.sel_band.reset()
+                    elif self.is_tracing == True:
+                        self.is_tracing = False
+                        self.poly_sel_band.reset()
+                    else:
+                        self.clearSelected()
                 else:
                     self.message = ""
                     self.cursor_bar.hide()
@@ -392,36 +399,44 @@ class SelectMapTool(QgsMapTool):
                         self.non_cad_layers.append([layer.layer(), color])
 
     def canvasPressEvent(self, event):
-        if self.is_tracing:
-            if not self.second_trace_pixel_point:
-                self.second_trace_pixel_point = event.pixelPoint()
+        self.press_success = False
+        self.first_loc = event.mapPoint()
+        self.first_loc_pixel = event.pixelPoint()
+        self.order = QgsProject.instance().layerTreeRoot().layerOrder()
+        if not self.is_tracing:
+            sel_rect = QgsRectangle(
+                (event.mapPoint().x() - (self.box_size_raw / 2)),
+                (event.mapPoint().y() - (self.box_size_raw / 2)),
+                (event.mapPoint().x() + (self.box_size_raw / 2)),
+                (event.mapPoint().y() + (self.box_size_raw / 2))
+            )
+            sel_geom = QgsGeometry.fromRect(sel_rect)
+            sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
+            sel_engine.prepareGeometry()
+            if self.shift_modified:
+                result = self.deselectOne(self.order, sel_engine)
             else:
-                pass
+                result = self.selectOne(self.order, sel_engine)
+            if not result:
+                self.is_tracing = True
+            else:
+                self.press_success = True
         else:
-            self.first_loc = event.mapPoint()
-            self.first_loc_pixel = event.pixelPoint()
+            pass
 
     def canvasReleaseEvent(self, event):
         self.second_loc = event.mapPoint()
         self.second_loc_pixel = event.pixelPoint()
-        if self.is_tracing:
+        if self.press_success is True:
+            pass
+        elif self.second_loc == self.first_loc and self.is_dragging is False:
             self.is_tracing = False
-            sel_geom = self.poly_sel_band.asGeometry()
-            sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
-            sel_engine.prepareGeometry()
-            if self.second_trace_pixel_point.x() > self.first_loc_pixel.x():
-                if self.shift_modified:
-                    self.rightDeselect(self.order, sel_engine)
-                else:
-                    self.rightSelect(self.order, sel_engine)
-            else:
-                if self.shift_modified:
-                    self.leftDeselect(self.order, sel_engine)
-                else:
-                    self.leftSelect(self.order, sel_engine)
-            self.poly_sel_band.reset()
-        elif self.is_dragging:
+            self.is_dragging = True
+            self.press_success = False
+        elif self.second_loc == self.first_loc and self.is_dragging is True:
             self.is_dragging = False
+            self.is_tracing = False
+            self.press_success = False
             sel_geom = self.sel_band.asGeometry()
             sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
             sel_engine.prepareGeometry()
@@ -436,27 +451,26 @@ class SelectMapTool(QgsMapTool):
                 else:
                     self.leftSelect(self.order, sel_engine)
             self.sel_band.reset()
-        elif self.second_loc = self.first_loc:
-            # feature search at location
-            sel_rect = QgsRectangle(
-                (self.second_loc.x() - (self.box_size_raw / 2)),
-                (self.second_loc.y() - (self.box_size_raw / 2)),
-                (self.second_loc.x() + (self.box_size_raw / 2)),
-                (self.second_loc.y() + (self.box_size_raw / 2))
-            )
-            sel_geom = QgsGeometry.fromRect(sel_rect)
+        elif self.is_tracing:
+            self.is_tracing = False
+            self.press_success = False
+            self.poly_sel_band.addPoint(self.second_loc)
+            sel_geom = self.poly_sel_band.asGeometry()
             sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
             sel_engine.prepareGeometry()
-            if self.shift_modified:
-                result = self.deselectOne(self.order, sel_engine)
-                if not result:
-                    self.is_dragging = True
+            if self.second_loc_pixel.x() > self.first_loc_pixel.x():
+                if self.shift_modified:
+                    self.rightDeselect(self.order, sel_engine)
+                else:
+                    self.rightSelect(self.order, sel_engine)
             else:
-                result = self.selectOne(self.order, sel_engine)
-                if not result:
-                    self.is_dragging = True
+                if self.shift_modified:
+                    self.leftDeselect(self.order, sel_engine)
+                else:
+                    self.leftSelect(self.order, sel_engine)
+            self.poly_sel_band.reset()
         else:
-            self.is_tracing = True
+            pass
         
     def rightSelect(self, order, engine):
         for layer in order:
@@ -496,7 +510,7 @@ class SelectMapTool(QgsMapTool):
             else:
                 for feature in layer.getFeatures():
                     geom = feature.geometry()
-                    if engine.intersects(geom.constGet()):
+                    if engine.intersects(geom.constGet()) or engine.contains(geom.constGet()):
                         if [layer, feature.id()] in self.selfeatures:
                             layer.deselect(feature.id())
                             self.selfeatures.remove([layer, feature.id()])
@@ -510,7 +524,7 @@ class SelectMapTool(QgsMapTool):
             else:
                 for feature in layer.getFeatures():
                     geom = feature.geometry()
-                    if engine.intersects(geom.constGet()):
+                    if engine.intersects(geom.constGet()) or engine.contains(geom.constGet()):
                         if [layer, feature.id()] not in self.selfeatures:
                             layer.selectByIds(
                                 [feature.id()],
@@ -542,8 +556,10 @@ class SelectMapTool(QgsMapTool):
                             if layer not in self.sellayers:
                                 self.sellayers.append(layer)
                         selected = [layer, feature.id()]
-        if selected == []:
-            self.is_tracing = True
+        if selected != []:
+            return True
+        else:
+            return False
 
     def deselectOne(self, order, engine):
         deselected = []
@@ -562,8 +578,10 @@ class SelectMapTool(QgsMapTool):
                         if layer not in [x[0] for x in self.selfeatures]:
                             self.sellayers.remove(layer)
                         deselected = [layer, feature.id()]
-        if deselected == []:
-            self.is_tracing = True
+        if deselected != []:
+            return True
+        else:
+            return False
 
     def drawSelector(self, first_point, second_point):
         self.sel_band.reset()
