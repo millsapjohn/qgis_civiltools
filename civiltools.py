@@ -11,7 +11,7 @@ from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QAction
 from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.icons import *
-from .map_tools.base_map_tool import BaseMapTool
+from .map_tools.select_tool import SelectMapTool
 from qgis.gui import QgsMapToolPan
 from .settings_tools.init_error_dialog import initErrorDialog
 from .settings_tools.init_dialog import initDialog
@@ -41,7 +41,7 @@ class CivilToolsPlugin:
         )
         # register a keyboard shortcut to launch drafting mode
         self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
-        self.draftingModeAction.triggered.connect(self.draftingMapTool)
+        self.draftingModeAction.triggered.connect(self.selectMapTool)
         self.mainMenu.addAction(self.draftingModeAction)
         self.initOptions()
 
@@ -130,12 +130,12 @@ class CivilToolsPlugin:
     def initToolbar(self):
         pass
 
-    def draftingMapTool(self):
+    def selectMapTool(self):
         project = QgsProject.instance()
         # check if project has been initialized before launching drafting mode
         if not QgsExpressionContextUtils.projectScope(project).variable("CAD_file"):
             iface.messageBar().pushMessage("Project has not been initialized")
-        elif isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
+        elif isinstance(self.iface.mapCanvas().mapTool(), SelectMapTool):
             # remove base message
             self.iface.messageBar().clearWidgets()
             # reset default Pan tool
@@ -143,7 +143,7 @@ class CivilToolsPlugin:
             self.iface.mapCanvas().setMapTool(self.panTool)
             self.iface.messageBar().pushMessage("Drafting Mode Deactivated")
         else:
-            self.mapTool = BaseMapTool(self.iface.mapCanvas(), self.iface)
+            self.mapTool = SelectMapTool(self.iface.mapCanvas(), self.iface)
             self.iface.mapCanvas().setMapTool(self.mapTool)
             self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
 
