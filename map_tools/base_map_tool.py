@@ -10,7 +10,6 @@ from qgis.PyQt.QtWidgets import QLineEdit, QTableWidget, QTableWidgetItem
 from qgis.core import (
     QgsProject,
     QgsVectorLayer,
-    QgsRectangle,
     QgsSettings,
     QgsLineString,
     QgsPoint,
@@ -32,14 +31,8 @@ class BaseMapTool(QgsMapTool):
         self.arrow_left_action = None
         self.arrow_right_action = None
         self.hint_selected = None
-        self.is_dragging = False
-        self.is_dragged = False
         self.shift_modified = False
         self.ctrl_modified = False
-        self.sel_band = QgsRubberBand(self.canvas)
-        # TODO: make this a setting
-        self.sel_band.setStrokeColor(QColor(0, 18, 255))
-        # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:
             self.box_size_raw = int(self.settings.value("CivilTools/box_size"))
@@ -99,8 +92,6 @@ class BaseMapTool(QgsMapTool):
             elif entry[0].geometryType() == Qgis.GeometryType.Polygon:
                 entry[0].renderer().symbol().setColor(self.polygon_color)
                 entry[0].triggerRepaint()
-        self.selfeatures = []  # list of selected features and their layer
-        self.sellayers = []  # list of layers that currently have a feature selected
         self.cursor_bar = QLineEdit()
         self.hint_table = QTableWidget()
         self.hint_table.setColumnCount(2)
@@ -174,13 +165,9 @@ class BaseMapTool(QgsMapTool):
         self.iface.messageBar().clearWidgets()
         self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
         self.message = ""
-        self.selfeatures = []
-        self.sellayers = []
         self.cursor_bar.hide()
         self.hint_table.hide()
         self.icon.reset()
-        self.is_dragged = False
-        self.clearSelected()
         # TODO: figure out why this is throwing errors
         # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
@@ -206,7 +193,6 @@ class BaseMapTool(QgsMapTool):
             entry[0].renderer().symbol().setColor(entry[1])
             entry[0].triggerRepaint()
         self.non_cad_layers = []
-        self.clearSelected()
         self.cursor_bar.hide()
         self.hint_table.hide()
         self.hint_selected = None
@@ -226,8 +212,6 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
-        if self.is_dragging is True:
-            self.drawSelector(self.first_loc, e.mapPoint())
 
     def keyPressEvent(self, e):
         match e.key():
@@ -237,7 +221,7 @@ class BaseMapTool(QgsMapTool):
                 self.sendCommand()
             case Qt.Key_Escape:
                 if len(self.message) == 0:
-                    self.clearSelected()
+                    pass
                 else:
                     self.message = ""
                     self.cursor_bar.hide()
@@ -335,11 +319,6 @@ class BaseMapTool(QgsMapTool):
             self.message = self.hint_table.item(self.hint_selected, 0).text()
             self.cursor_bar.setText(self.message)
 
-    def clearSelected(self):
-        self.iface.mainWindow().findChild(QAction, 'mActionDeselectAll').trigger()
-        self.selfeatures = []
-        self.sellayers = []
-
     def drawHints(self):
         self.hint_table.clearContents()
         self.matches = self.matchCommand(self.message)
@@ -384,161 +363,6 @@ class BaseMapTool(QgsMapTool):
                     if "cad" not in layer.layer().name():
                         color = layer.layer().renderer().symbol().color()
                         self.non_cad_layers.append([layer.layer(), color])
-
-    def canvasPressEvent(self, event):
-        self.first_loc = event.mapPoint()
-        self.first_loc_pixel = event.pixelPoint()
-        self.is_dragging = True
-
-    def canvasReleaseEvent(self, event):
-        # TODO: add freehand/polygon selection
-        self.second_loc = event.mapPoint()
-        self.second_loc_pixel = event.pixelPoint()
-        self.sel_band.reset()
-        self.is_dragging = False
-        self.order = QgsProject.instance().layerTreeRoot().layerOrder()
-        # select multiple features when dragged
-        if self.second_loc != self.first_loc:
-            sel_geom = QgsGeometry.fromRect(
-                                    QgsRectangle(self.first_loc, self.second_loc))
-            sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
-            sel_engine.prepareGeometry()
-            if self.second_loc_pixel.x() > self.first_loc_pixel.x():
-                if self.shift_modified:
-                    self.rightDeselect(self.order, sel_engine)
-                else:
-                    self.rightSelect(self.order, sel_engine)
-            else:
-                if self.shift_modified:
-                    self.leftDeselect(self.order, sel_engine)
-                else:
-                    self.leftSelect(self.order, sel_engine)
-        else:
-            # select/deselect single feature when not dragged
-            sel_rect = QgsRectangle(
-                (self.second_loc.x() - (self.box_size_raw / 2)),
-                (self.second_loc.y() - (self.box_size_raw / 2)),
-                (self.second_loc.x() + (self.box_size_raw / 2)),
-                (self.second_loc.y() + (self.box_size_raw / 2))
-            )
-            sel_geom = QgsGeometry.fromRect(sel_rect)
-            sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
-            sel_engine.prepareGeometry()
-            if self.shift_modified:
-                self.deselectOne(self.order, sel_engine)
-            else:
-                self.selectOne(self.order, sel_engine)
-        self.first_loc = self.second_loc
-
-    def rightSelect(self, order, engine):
-        for layer in order:
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                for feature in layer.getFeatures():
-                    geom = feature.geometry()
-                    if engine.contains(geom.constGet()):
-                        if [layer, feature.id()] not in self.selfeatures:
-                            layer.selectByIds(
-                                [feature.id()],
-                                Qgis.SelectBehavior.AddToSelection
-                            )
-                            self.selfeatures.append([layer, feature.id()])
-                            if layer not in self.sellayers:
-                                self.sellayers.append(layer)
-
-    def rightDeselect(self, order, engine):
-        for layer in order:
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                for feature in layer.getFeatures():
-                    geom = feature.geometry()
-                    if engine.contains(geom.constGet()):
-                        if [layer, feature.id()] in self.selfeatures:
-                            layer.deselect(feature.id())
-                            self.selfeatures.remove([layer, feature.id()])
-                            if layer not in [x[0] for x in self.selfeatures]:
-                                self.sellayers.remove(layer)
-
-    def leftDeselect(self, order, engine):
-        for layer in order:
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                for feature in layer.getFeatures():
-                    geom = feature.geometry()
-                    if engine.intersects(geom.constGet()):
-                        if [layer, feature.id()] in self.selfeatures:
-                            layer.deselect(feature.id())
-                            self.selfeatures.remove([layer, feature.id()])
-                            if layer not in [x[0] for x in self.selfeatures]:
-                                self.sellayers.remove(layer)
-
-    def leftSelect(self, order, engine):
-        for layer in order:
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                for feature in layer.getFeatures():
-                    geom = feature.geometry()
-                    if engine.intersects(geom.constGet()):
-                        if [layer, feature.id()] not in self.selfeatures:
-                            layer.selectByIds(
-                                [feature.id()],
-                                Qgis.SelectBehavior.AddToSelection
-                            )
-                            self.selfeatures.append([layer, feature.id()])
-                            if layer not in self.sellayers:
-                                self.sellayers.append(layer)
-
-    def selectOne(self, order, engine):
-        selected = []
-        for layer in order:
-            if selected != []:
-                break
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                for feature in layer.getFeatures():
-                    if selected != []:
-                        break
-                    geom = feature.geometry()
-                    if engine.intersects(geom.constGet()):
-                        if [layer, feature.id()] not in self.selfeatures:
-                            layer.selectByIds(
-                                [feature.id()],
-                                Qgis.SelectBehavior.AddToSelection
-                            )
-                            self.selfeatures.append([layer, feature.id()])
-                            if layer not in self.sellayers:
-                                self.sellayers.append(layer)
-                        selected = [layer, feature.id()]
-
-    def deselectOne(self, order, engine):
-        deselected = []
-        for layer in order:
-            if deselected != []:
-                break
-            if layer.source() not in self.vlayers:
-                continue
-            else:
-                for feature in layer.getFeatures():
-                    geom = feature.geometry()
-                    if (engine.intersects(geom.constGet()) and
-                        [layer, feature.id()] in self.selfeatures):
-                        layer.deselect(feature.id())
-                        self.selfeatures.remove([layer, feature.id()])
-                        if layer not in [x[0] for x in self.selfeatures]:
-                            self.sellayers.remove(layer)
-                        deselected = [layer, feature.id()]
-
-    def drawSelector(self, first_point, second_point):
-        self.sel_band.reset()
-        self.sel_band.addGeometry(
-                        QgsGeometry().
-                        fromRect(
-                            QgsRectangle(first_point, second_point)))
 
     def drawCursor(self, canvas, icon, pixelx, pixely):
         # method for dynamic drawing of the cursor
