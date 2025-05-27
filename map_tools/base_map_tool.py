@@ -30,6 +30,10 @@ class BaseMapTool(QgsMapTool):
         QgsMapTool.__init__(self, self.canvas)
 
     def activate(self):
+        # keeping this on the base class for passing to commands
+        # that have PICKFIRST functionality
+        self.selfeatures = []
+        self.sellayers = []
         # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:

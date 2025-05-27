@@ -25,8 +25,6 @@ class SelectMapTool(BaseMapTool):
 
     def activate(self):
         super().activate()
-        self.selfeatures = []
-        self.sellayers = []
         self.is_dragging = False
         self.is_tracing = False
         self.shift_modified = False
@@ -116,8 +114,9 @@ class SelectMapTool(BaseMapTool):
 
     def canvasPressEvent(self, e):
         self.press_success = False
-        self.first_loc = e.mapPoint()
-        self.first_loc_pixel = e.pixelPoint()
+        if not self.is_dragging and not self.is_tracing:
+            self.first_loc = e.mapPoint()
+            self.first_loc_pixel = e.pixelPoint()
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
         if not self.is_tracing:
             sel_rect = QgsRectangle(
@@ -149,7 +148,7 @@ class SelectMapTool(BaseMapTool):
             self.is_tracing = False
             self.is_dragging = True
             self.press_success = False
-        elif self.second_loc == self.first_loc and self.is_dragging is True:
+        elif self.second_loc != self.first_loc and self.is_dragging is True:
             self.is_dragging = False
             self.is_tracing = False
             self.press_success = False
@@ -189,6 +188,7 @@ class SelectMapTool(BaseMapTool):
             pass
 
     def rightSelect(self, order, engine):
+        print("right select")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -206,6 +206,7 @@ class SelectMapTool(BaseMapTool):
                                 self.sellayers.append(layer)
 
     def rightDeselect(self, order, engine):
+        print("right deselect")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -220,6 +221,7 @@ class SelectMapTool(BaseMapTool):
                                 self.sellayers.remove(layer)
 
     def leftDeselect(self, order, engine):
+        print("left deselect")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -234,6 +236,7 @@ class SelectMapTool(BaseMapTool):
                                 self.sellayers.remove(layer)
 
     def leftSelect(self, order, engine):
+        print("left select")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -300,7 +303,7 @@ class SelectMapTool(BaseMapTool):
             return False
 
     def drawSelector(self, first_point, second_point):
-        self.sel_band.reset()
+        self.sel_band.reset(Qgis.GeometryType.Polygon)
         self.sel_band.addGeometry(
                         QgsGeometry().
                         fromRect(
