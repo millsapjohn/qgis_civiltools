@@ -1,9 +1,0 @@
-command to hide all annotations
-add layer to snapping exclusion
-autosave
-when installing, option to import styles, expressions, scripts, etc
-use kart as undo/redo backend
-	- look into bundled installation
-	- look into running shell commands from Python
-
-set CAD layers as private, create a "recover" feature

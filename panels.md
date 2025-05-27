@@ -1,0 +1,7 @@
+- command line panel
+- level manager panel
+- utilities panel
+  - undo/redo
+  - snaps
+  - ortho mode
+- grading tools panel
