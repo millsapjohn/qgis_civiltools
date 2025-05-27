@@ -23,6 +23,7 @@ from .key_validator import keyValidator
 
 class SelectMapTool(QgsMapTool):
     def __init__(self, canvas, iface):
+        super().__init__(canvas)
         self.canvas = canvas
         self.iface = iface
         # delete shortcuts before reinitializing
@@ -37,6 +38,51 @@ class SelectMapTool(QgsMapTool):
         self.shift_modified = False
         self.ctrl_modified = False
         self.is_tracing = False
+        
+    def on_map_tool_set(self, new_tool, old_tool):
+        if new_tool == self:
+            pass
+        else:
+            self.reset()
+
+    def activate(self):
+        super().activate()
+        # reinitialize shortcuts
+        if not self.bsp_action:
+            self.bsp_action = QAction(self.canvas)
+            self.bsp_action.setShortcut(Qt.Key_Backspace)
+            self.bsp_action.triggered.connect(self.handleBackspace)
+            self.canvas.addAction(self.bsp_action)
+        if self.bsp_action not in self.canvas.actions():
+            self.canvas.addAction(self.bsp_action)
+        if not self.arrow_down_action:
+            self.arrow_down_action = QAction(self.canvas)
+            self.arrow_down_action.setShortcut(Qt.Key_Down)
+            self.arrow_down_action.triggered.connect(self.handleDownArrow)
+            self.canvas.addAction(self.arrow_down_action)
+        if self.arrow_down_action not in self.canvas.actions():
+            self.canvas.addAction(self.arrow_down_action)
+        if not self.arrow_up_action:
+            self.arrow_up_action = QAction(self.canvas)
+            self.arrow_up_action.setShortcut(Qt.Key_Up)
+            self.arrow_up_action.triggered.connect(self.handleUpArrow)
+            self.canvas.addAction(self.arrow_up_action)
+        if self.arrow_up_action not in self.canvas.actions():
+            self.canvas.addAction(self.arrow_up_action)
+        if not self.arrow_left_action:
+            self.arrow_left_action = QAction(self.canvas)
+            self.arrow_left_action.setShortcut(Qt.Key_Left)
+            self.arrow_left_action.triggered.connect(self.handleHorizontal)
+            self.canvas.addAction(self.arrow_left_action)
+        if self.arrow_left_action not in self.canvas.actions():
+            self.canvas.addAction(self.arrow_left_action)
+        if not self.arrow_right_action:
+            self.arrow_right_action = QAction(self.canvas)
+            self.arrow_right_action.setShortcut(Qt.Key_Right)
+            self.arrow_right_action.triggered.connect(self.handleHorizontal)
+            self.canvas.addAction(self.arrow_right_action)
+        if self.arrow_right_action not in self.canvas.actions():
+            self.canvas.addAction(self.arrow_right_action)        
         self.sel_band = QgsRubberBand(self.canvas)
         self.poly_sel_band = QgsRubberBand(self.canvas)
         # TODO: make this a setting
@@ -74,7 +120,6 @@ class SelectMapTool(QgsMapTool):
             self.polygon_color = self.settings.value("CivilTools/polygon_color")
         else:
             self.polygon_color = QColor(255, 255, 255)
-        QgsMapTool.__init__(self, self.canvas)
         # override canvas color in drafting mode
         self.canvas.setCanvasColor(self.override_color)
         self.cursor = QCursor()
@@ -82,8 +127,8 @@ class SelectMapTool(QgsMapTool):
         self.setCursor(self.cursor)
         self.icon = QgsRubberBand(self.canvas)
         self.icon.setColor(self.cursor_color)
-        self.initx = canvas.mouseLastXY().x()
-        self.inity = canvas.mouseLastXY().y()
+        self.initx = self.canvas.mouseLastXY().x()
+        self.inity = self.canvas.mouseLastXY().y()
         self.drawCursor(self.canvas, self.icon, self.initx, self.inity)
         self.flags()
         self.message = ""  # string to display next to cursor
@@ -126,45 +171,7 @@ class SelectMapTool(QgsMapTool):
                 (self.canvas.mouseLastXY().y() + 10),
             )
         )
-        # reinitialize shortcuts
-        if not self.bsp_action:
-            self.bsp_action = QAction(self.canvas)
-            self.bsp_action.setShortcut(Qt.Key_Backspace)
-            self.bsp_action.triggered.connect(self.handleBackspace)
-            self.canvas.addAction(self.bsp_action)
-        elif self.bsp_action not in self.canvas.actions():
-            self.canvas.addAction(self.bsp_action)
-        if not self.arrow_down_action:
-            self.arrow_down_action = QAction(self.canvas)
-            self.arrow_down_action.setShortcut(Qt.Key_Down)
-            self.arrow_down_action.triggered.connect(self.handleDownArrow)
-            self.canvas.addAction(self.arrow_down_action)
-        elif self.arrow_down_action not in self.canvas.actions():
-            self.canvas.addAction(self.arrow_down_action)
-        if not self.arrow_up_action:
-            self.arrow_up_action = QAction(self.canvas)
-            self.arrow_up_action.setShortcut(Qt.Key_Up)
-            self.arrow_up_action.triggered.connect(self.handleUpArrow)
-            self.canvas.addAction(self.arrow_up_action)
-        elif self.arrow_up_action not in self.canvas.actions():
-            self.canvas.addAction(self.arrow_up_action)
-        if not self.arrow_left_action:
-            self.arrow_left_action = QAction(self.canvas)
-            self.arrow_left_action.setShortcut(Qt.Key_Left)
-            self.arrow_left_action.triggered.connect(self.handleHorizontal)
-            self.canvas.addAction(self.arrow_left_action)
-        if not self.arrow_right_action:
-            self.arrow_right_action = QAction(self.canvas)
-            self.arrow_right_action.setShortcut(Qt.Key_Right)
-            self.arrow_right_action.triggered.connect(self.handleHorizontal)
-            self.canvas.addAction(self.arrow_right_action)
-
-    def on_map_tool_set(self, new_tool, old_tool):
-        if new_tool == self:
-            pass
-        else:
-            self.reset()
-
+            
     def populateContextMenu(self, menu):
         self.context_menu = baseContextMenu(menu)
 
