@@ -169,7 +169,7 @@ class BaseMapTool(QgsMapTool):
         elif self.arrow_right_action not in self.canvas.actions:
             self.canvas.addAction(self.arrow_right_action)
 
-        self.canvas.extentsChanged.connect(self.getSnaps)
+        '''self.canvas.extentsChanged.connect(self.getSnaps)
         self.vertex_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
         self.vertex_band.setColor(QColor(0, 255, 69))
         self.vertex_band.setIcon(QgsRubberBand.IconType.ICON_BOX)
@@ -194,7 +194,7 @@ class BaseMapTool(QgsMapTool):
         self.intersection_band.setColor(QColor(0, 255, 69))
         self.intersection_band.setIcon(QgsRubberBand.IconType.ICON_X)
         self.intersection_band.setIconSize(10)
-        self.intersection_band.hide()
+        self.intersection_band.hide()'''
         self.getSnaps()
 
     def on_map_tool_set(self, new_tool, old_tool):
@@ -247,11 +247,11 @@ class BaseMapTool(QgsMapTool):
         self.hint_table.hide()
         self.hint_selected = None
         self.icon.reset()
-        self.vertex_band.reset()
+        '''self.vertex_band.reset()
         self.midpoint_band.reset()
         self.center_band.reset()
         self.quadrant_band.reset()
-        self.intersection_band.reset()
+        self.intersection_band.reset()'''
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
         self.canvas.extentsChanged.disconnect(self.getSnaps)
         QgsMapTool.deactivate(self)
@@ -269,7 +269,7 @@ class BaseMapTool(QgsMapTool):
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
 
-    def canvasDoubleClickEvent(self, e):
+    '''def canvasDoubleClickEvent(self, e):
         if self.vertex_band.isVisible():
             self.vertex_band.hide()
         else:
@@ -277,7 +277,7 @@ class BaseMapTool(QgsMapTool):
         if self.midpoint_band.isVisible():
             self.midpoint_band.hide()
         else:
-            self.midpoint_band.show()
+            self.midpoint_band.show()'''
 
     def keyPressEvent(self, e):
         match e.key():
@@ -456,7 +456,7 @@ class BaseMapTool(QgsMapTool):
                     for vertex in vertices:
                         self.vertex_snaps.append(vertex)
                         xy_vertex = QgsPointXY(vertex.x(), vertex.y())
-                        self.vertex_band.addPoint(xy_vertex, doUpdate=False)
+                        # self.vertex_band.addPoint(xy_vertex, doUpdate=False)
                         vertex_list.append(vertex)
                     if layer.geometryType() != Qgis.GeometryType.Point:
                         for i in range(len(vertex_list) - 1):
@@ -465,16 +465,16 @@ class BaseMapTool(QgsMapTool):
                             midpoint = geom.interpolate(midpoint_dist).asPoint()
                             self.midpoint_snaps.append(midpoint)
                             xy_midpoint = QgsPointXY(midpoint.x(), midpoint.y())
-                            self.midpoint_band.addPoint(xy_midpoint, doUpdate=False)
+                            # self.midpoint_band.addPoint(xy_midpoint, doUpdate=False)
                 if layer.geometryType() == Qgis.GeometryType.Polygon:
                     for feature in features:
                         centroid = feature.geometry().centroid()
-                        self.center_snaps.append(centroid)
+                        # self.center_snaps.append(centroid)
                         xy_centroid = QgsPointXY(centroid.x(), centroid.y())
-                        self.center_band.addPoint(xy_centroid, doUpdate=False)
-        self.vertex_band.updatePosition()
+                        # self.center_band.addPoint(xy_centroid, doUpdate=False)
+        '''self.vertex_band.updatePosition()
         self.center_band.updatePosition()
-        self.midpoint_band.updatePosition()
+        self.midpoint_band.updatePosition()'''
 
     def drawCursor(self, canvas, icon, pixelx, pixely):
         # method for dynamic drawing of the cursor
