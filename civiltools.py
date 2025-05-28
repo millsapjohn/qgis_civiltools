@@ -17,8 +17,6 @@ from .settings_tools.init_error_dialog import initErrorDialog
 from .settings_tools.init_dialog import initDialog
 from .settings_tools.gpkg_builder import gpkgBuilder
 
-app = QgsApplication.instance()
-
 
 class CivilToolsPlugin:
     def __init__(self, iface):

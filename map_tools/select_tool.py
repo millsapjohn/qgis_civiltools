@@ -188,7 +188,6 @@ class SelectMapTool(BaseMapTool):
             pass
 
     def rightSelect(self, order, engine):
-        print("right select")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -206,7 +205,6 @@ class SelectMapTool(BaseMapTool):
                                 self.sellayers.append(layer)
 
     def rightDeselect(self, order, engine):
-        print("right deselect")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -221,7 +219,6 @@ class SelectMapTool(BaseMapTool):
                                 self.sellayers.remove(layer)
 
     def leftDeselect(self, order, engine):
-        print("left deselect")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue
@@ -236,7 +233,6 @@ class SelectMapTool(BaseMapTool):
                                 self.sellayers.remove(layer)
 
     def leftSelect(self, order, engine):
-        print("left select")
         for layer in order:
             if layer.source() not in self.vlayers:
                 continue

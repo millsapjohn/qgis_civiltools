@@ -8,11 +8,15 @@ from qgis.core import (
     QgsSettings,
     QgsLineString,
     QgsPoint,
+    QgsPointXY,
     QgsGeometry,
     Qgis,
+    QgsFeatureRequest,
+    QgsApplication
 )
 from .context_menus import baseContextMenu
 from .key_validator import keyValidator
+from os import path
 
 
 class BaseMapTool(QgsMapTool):
@@ -27,6 +31,7 @@ class BaseMapTool(QgsMapTool):
         self.arrow_left_action = None
         self.arrow_right_action = None
         self.hint_selected = None
+        self.icon_dict = self.findIcons()
         QgsMapTool.__init__(self, self.canvas)
 
     def activate(self):
@@ -34,6 +39,11 @@ class BaseMapTool(QgsMapTool):
         # that have PICKFIRST functionality
         self.selfeatures = []
         self.sellayers = []
+        self.vertex_snaps = []
+        self.midpoint_snaps = []
+        self.center_snaps = []
+        self.quadrant_snaps = []
+        self.intersection_snaps = []
         # read a bunch of default settings for colors and sizes
         self.settings = QgsSettings()
         if self.settings.value("CivilTools/box_size") is not None:
@@ -159,6 +169,34 @@ class BaseMapTool(QgsMapTool):
         elif self.arrow_right_action not in self.canvas.actions:
             self.canvas.addAction(self.arrow_right_action)
 
+        self.canvas.extentsChanged.connect(self.getSnaps)
+        self.vertex_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
+        self.vertex_band.setColor(QColor(0, 255, 69))
+        self.vertex_band.setIcon(QgsRubberBand.IconType.ICON_BOX)
+        self.vertex_band.setIconSize(10)
+        self.vertex_band.hide()
+        self.midpoint_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
+        self.midpoint_band.setColor(QColor(0, 255, 69))
+        self.midpoint_band.setIcon(QgsRubberBand.IconType.ICON_DIAMOND)
+        self.midpoint_band.setIconSize(10)
+        self.midpoint_band.hide()
+        self.center_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
+        self.center_band.setColor(QColor(0, 255, 69))
+        self.center_band.setIcon(QgsRubberBand.IconType.ICON_CIRCLE)
+        self.center_band.setIconSize(10)
+        self.center_band.hide()
+        self.quadrant_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
+        self.quadrant_band.setColor(QColor(0, 255, 69))
+        self.quadrant_band.setIcon(QgsRubberBand.IconType.ICON_BOX)
+        self.quadrant_band.setIconSize(10)
+        self.quadrant_band.hide()
+        self.intersection_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
+        self.intersection_band.setColor(QColor(0, 255, 69))
+        self.intersection_band.setIcon(QgsRubberBand.IconType.ICON_X)
+        self.intersection_band.setIconSize(10)
+        self.intersection_band.hide()
+        self.getSnaps()
+
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
             pass
@@ -209,7 +247,13 @@ class BaseMapTool(QgsMapTool):
         self.hint_table.hide()
         self.hint_selected = None
         self.icon.reset()
+        self.vertex_band.reset()
+        self.midpoint_band.reset()
+        self.center_band.reset()
+        self.quadrant_band.reset()
+        self.intersection_band.reset()
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
+        self.canvas.extentsChanged.disconnect(self.getSnaps)
         QgsMapTool.deactivate(self)
         self.deactivated.emit()
 
@@ -224,6 +268,16 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
+
+    def canvasDoubleClickEvent(self, e):
+        if self.vertex_band.isVisible():
+            self.vertex_band.hide()
+        else:
+            self.vertex_band.show()
+        if self.midpoint_band.isVisible():
+            self.midpoint_band.hide()
+        else:
+            self.midpoint_band.show()
 
     def keyPressEvent(self, e):
         match e.key():
@@ -382,6 +436,46 @@ class BaseMapTool(QgsMapTool):
                         color = layer.layer().renderer().symbol().color()
                         self.non_cad_layers.append([layer.layer(), color])
 
+    def getSnaps(self):
+        self.vertex_snaps.clear()
+        self.midpoint_snaps.clear()
+        self.center_snaps.clear()
+        self.quadrant_snaps.clear()
+        self.intersection_snaps.clear()
+        extent = self.canvas.extent()
+        request = QgsFeatureRequest()
+        request.setFilterRect(extent)
+        for layer in QgsProject.instance().layerTreeRoot().layerOrder():
+            if layer.source() not in self.vlayers:
+                continue
+            else:
+                features = layer.getFeatures(request)
+                for feature in features:
+                    vertex_list = []
+                    vertices = feature.geometry().vertices()
+                    for vertex in vertices:
+                        self.vertex_snaps.append(vertex)
+                        xy_vertex = QgsPointXY(vertex.x(), vertex.y())
+                        self.vertex_band.addPoint(xy_vertex, doUpdate=False)
+                        vertex_list.append(vertex)
+                    if layer.geometryType() != Qgis.GeometryType.Point:
+                        for i in range(len(vertex_list) - 1):
+                            geom = QgsGeometry.fromPolylineXY([QgsPointXY(vertex_list[i].x(), vertex_list[i].y()), QgsPointXY(vertex_list[i + 1].x(), vertex_list[i + 1].y())])
+                            midpoint_dist = geom.length() / 2
+                            midpoint = geom.interpolate(midpoint_dist).asPoint()
+                            self.midpoint_snaps.append(midpoint)
+                            xy_midpoint = QgsPointXY(midpoint.x(), midpoint.y())
+                            self.midpoint_band.addPoint(xy_midpoint, doUpdate=False)
+                if layer.geometryType() == Qgis.GeometryType.Polygon:
+                    for feature in features:
+                        centroid = feature.geometry().centroid()
+                        self.center_snaps.append(centroid)
+                        xy_centroid = QgsPointXY(centroid.x(), centroid.y())
+                        self.center_band.addPoint(xy_centroid, doUpdate=False)
+        self.vertex_band.updatePosition()
+        self.center_band.updatePosition()
+        self.midpoint_band.updatePosition()
+
     def drawCursor(self, canvas, icon, pixelx, pixely):
         # method for dynamic drawing of the cursor
         # won't extend beyond map extents
@@ -476,3 +570,25 @@ class BaseMapTool(QgsMapTool):
         icon.addGeometry(self.right_line, doUpdate=False)
         icon.addGeometry(self.up_line, doUpdate=False)
         icon.addGeometry(self.down_line)
+
+    def findIcons(self):
+        icon_dict = {}
+        pluginpath = QgsApplication.instance().pluginPath()
+        svg_dir = path.join(pluginpath, 'CivilTools/resources')
+        endpoint_path = path.join(svg_dir, 'endpoint_quadrant.svg')
+        icon_dict['endpoint'] = endpoint_path
+        tangent_path = path.join(svg_dir, 'tangent.svg')
+        icon_dict['tangent'] = tangent_path
+        center_path = path.join(svg_dir, 'center.svg')
+        icon_dict['center'] = center_path
+        intersection_path = path.join(svg_dir, 'intersection.svg')
+        icon_dict['intersection'] = intersection_path
+        midpoint_path = path.join(svg_dir, 'midpoint.svg')
+        icon_dict['midpoint'] = midpoint_path
+        nearest_path = path.join(svg_dir, 'nearest.svg')
+        icon_dict['nearest'] = nearest_path
+        parallel_path = path.join(svg_dir, 'parallel.svg')
+        icon_dict['parallel'] = parallel_path
+        perpendicular_path = path.join(svg_dir, 'perpendicular.svg')
+        icon_dict['perpendicular'] = perpendicular_path
+        return icon_dict

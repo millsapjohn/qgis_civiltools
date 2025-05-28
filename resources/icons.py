@@ -28,20 +28,3 @@ pedit_icon = QIcon(":/qt-project.org/qtgradienteditor/images/edit.png")
 array_icon = QIcon(":/images/themes/default/mIconFieldArrayString.svg")
 cad_icon = QIcon(":/images/themes/default/cadtools/cad.svg")
 settings_icon = QIcon(":/images/themes/default/propertyicons/settings.svg")
-
-# Snap Icons
-vertex_icon = ""  # square
-midpoint_icon = ""  # triangle
-center_icon = ""  # circle
-node_icon = ""  # crosshair
-intersection_icon = ""  # cross
-perpendicular_icon = ""  # right angle
-tangent_icon = ""  # arc and line
-nearest_icon = ""  # hourglass
-
-# Grip Icons
-line_vertex_icon = ""  # filled square
-line_midpoint_icon = ""  # filled square
-pline_midpoint_icon = ""  # bar
-align_vertex_icon = ""  # filled triangle
-arc_center_icon = ""  # filled square
