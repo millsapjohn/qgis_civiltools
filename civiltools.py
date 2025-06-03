@@ -3,12 +3,16 @@ from qgis.core import (
     QgsProject,
     QgsExpressionContextUtils,
     QgsProviderRegistry,
+    QgsMapLayer,
     QgsVectorLayer,
 )
 import os
 from osgeo import ogr
 from qgis.utils import iface
-from qgis.PyQt.QtWidgets import QAction
+try:
+    from qgis.PyQt.QtWidgets import QAction
+except ImportError:
+    from qgis.PyQt.QtGui import QAction
 from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.icons import *
 from .map_tools.select_tool import SelectMapTool
@@ -181,23 +185,14 @@ class CivilToolsPlugin:
             md.saveConnection(conn, basename)
             iface.reloadConnections()
             # add all CAD layers to a dedicated group
-            group_name = "CAD Layers"
             root = project.layerTreeRoot()
-            group = root.addGroup(group_name)
             for layer in layers:
                 layer_path = self.filename + f"|layername={layer}"
                 vl = QgsVectorLayer(layer_path, layer, "ogr")
+                vl.setFlags(QgsMapLayer.Private)
                 project.addMapLayer(vl)
                 if not vl.isEditable():
                     vl.startEditing()
-                vlid = root.findLayer(vl.id())
-                # adding a clone and deleting the original seems to be
-                # the best way to move between groups
-                clone = vlid.clone()
-                group.insertChildNode(0, clone)
-                vlid.parent().removeChildNode(vlid)
-                # collapse group by default to avoid cluttering the layer tree
-                group.setExpanded(False)
             # works in concert with the Project Setup plugin, if it's been installed, 
             # to manage persistent connections
             if QgsExpressionContextUtils.projectScope(project).variable(

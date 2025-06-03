@@ -253,7 +253,7 @@ class BaseMapTool(QgsMapTool):
         self.quadrant_band.reset()
         self.intersection_band.reset()'''
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
-        self.canvas.extentsChanged.disconnect(self.getSnaps)
+        # self.canvas.extentsChanged.disconnect(self.getSnaps)
         QgsMapTool.deactivate(self)
         self.deactivated.emit()
 
