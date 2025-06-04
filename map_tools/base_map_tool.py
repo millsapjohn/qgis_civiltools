@@ -9,6 +9,7 @@ from qgis.core import (
     QgsLineString,
     QgsPoint,
     QgsPointXY,
+    QgsRectangle,
     QgsGeometry,
     Qgis,
     QgsFeatureRequest,
@@ -50,6 +51,8 @@ class BaseMapTool(QgsMapTool):
             self.box_size_raw = int(self.settings.value("CivilTools/box_size"))
         else:
             self.box_size_raw = 10
+        self.box_size_calc = self.canvas.mapUnitsPerPixel() * self.box_size_raw
+        self.canvas.extentsChanged.connect(self.setBoxSize)
         if self.settings.value("CivilTools/crosshair_size") is not None:
             self.crosshair_size_raw = int(
                 self.settings.value("CivilTools/crosshair_size")
@@ -169,7 +172,6 @@ class BaseMapTool(QgsMapTool):
         elif self.arrow_right_action not in self.canvas.actions:
             self.canvas.addAction(self.arrow_right_action)
 
-        '''self.canvas.extentsChanged.connect(self.getSnaps)
         self.vertex_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
         self.vertex_band.setColor(QColor(0, 255, 69))
         self.vertex_band.setIcon(QgsRubberBand.IconType.ICON_BOX)
@@ -194,8 +196,8 @@ class BaseMapTool(QgsMapTool):
         self.intersection_band.setColor(QColor(0, 255, 69))
         self.intersection_band.setIcon(QgsRubberBand.IconType.ICON_X)
         self.intersection_band.setIconSize(10)
-        self.intersection_band.hide()'''
-        self.getSnaps()
+        self.intersection_band.hide()
+        self.test_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Polygon)
 
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
@@ -247,11 +249,12 @@ class BaseMapTool(QgsMapTool):
         self.hint_table.hide()
         self.hint_selected = None
         self.icon.reset()
-        '''self.vertex_band.reset()
+        self.vertex_band.reset()
         self.midpoint_band.reset()
         self.center_band.reset()
         self.quadrant_band.reset()
-        self.intersection_band.reset()'''
+        self.intersection_band.reset()
+        self.test_band.reset()
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
         # self.canvas.extentsChanged.disconnect(self.getSnaps)
         QgsMapTool.deactivate(self)
@@ -268,8 +271,9 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
+        self.getStaticSnaps(e.mapPoint())
 
-    '''def canvasDoubleClickEvent(self, e):
+    def canvasDoubleClickEvent(self, e):
         if self.vertex_band.isVisible():
             self.vertex_band.hide()
         else:
@@ -277,7 +281,7 @@ class BaseMapTool(QgsMapTool):
         if self.midpoint_band.isVisible():
             self.midpoint_band.hide()
         else:
-            self.midpoint_band.show()'''
+            self.midpoint_band.show()
 
     def keyPressEvent(self, e):
         match e.key():
@@ -436,45 +440,66 @@ class BaseMapTool(QgsMapTool):
                         color = layer.layer().renderer().symbol().color()
                         self.non_cad_layers.append([layer.layer(), color])
 
-    def getSnaps(self):
-        self.vertex_snaps.clear()
-        self.midpoint_snaps.clear()
-        self.center_snaps.clear()
-        self.quadrant_snaps.clear()
-        self.intersection_snaps.clear()
-        extent = self.canvas.extent()
+    def getStaticSnaps(self, point):
+        self.test_band.reset(Qgis.GeometryType.Polygon)
+        found = False
         request = QgsFeatureRequest()
-        request.setFilterRect(extent)
+        rect = QgsRectangle(
+            (point.x() - self.box_size_calc),
+            (point.y() - self.box_size_calc),
+            (point.x() + self.box_size_calc),
+            (point.y() + self.box_size_calc)
+        )
+        self.test_band.setToGeometry(QgsGeometry.fromRect(rect))
+        request.setFilterRect(rect)
         for layer in QgsProject.instance().layerTreeRoot().layerOrder():
-            if layer.source() not in self.vlayers:
+            if found is True:
+                break
+            elif layer.source() not in self.vlayers:
                 continue
             else:
                 features = layer.getFeatures(request)
-                for feature in features:
-                    vertex_list = []
-                    vertices = feature.geometry().vertices()
-                    for vertex in vertices:
-                        self.vertex_snaps.append(vertex)
-                        xy_vertex = QgsPointXY(vertex.x(), vertex.y())
-                        # self.vertex_band.addPoint(xy_vertex, doUpdate=False)
-                        vertex_list.append(vertex)
-                    if layer.geometryType() != Qgis.GeometryType.Point:
-                        for i in range(len(vertex_list) - 1):
-                            geom = QgsGeometry.fromPolylineXY([QgsPointXY(vertex_list[i].x(), vertex_list[i].y()), QgsPointXY(vertex_list[i + 1].x(), vertex_list[i + 1].y())])
-                            midpoint_dist = geom.length() / 2
-                            midpoint = geom.interpolate(midpoint_dist).asPoint()
-                            self.midpoint_snaps.append(midpoint)
-                            xy_midpoint = QgsPointXY(midpoint.x(), midpoint.y())
-                            # self.midpoint_band.addPoint(xy_midpoint, doUpdate=False)
-                if layer.geometryType() == Qgis.GeometryType.Polygon:
+                if features is None:
+                    continue
+                else:
+                    found = True
+                    self.vertex_snaps.clear()
+                    self.vertex_band.reset(Qgis.GeometryType.Point)
+                    self.midpoint_snaps.clear()
+                    self.midpoint_band.reset(Qgis.GeometryType.Point)
+                    self.center_snaps.clear()
+                    self.center_band.reset(Qgis.GeometryType.Point)
                     for feature in features:
-                        centroid = feature.geometry().centroid()
-                        # self.center_snaps.append(centroid)
-                        xy_centroid = QgsPointXY(centroid.x(), centroid.y())
-                        # self.center_band.addPoint(xy_centroid, doUpdate=False)
-        '''self.vertex_band.updatePosition()
+                        vertex_list = []
+                        vertices = feature.geometry().vertices()
+                        for vertex in vertices:
+                            xy_vertex = QgsPointXY(vertex.x(), vertex.y())
+                            vertex_list.append(xy_vertex)
+                            self.vertex_band.addPoint(xy_vertex, doUpdate=False)
+                        self.vertex_snaps = vertex_list
+                        if layer.geometryType() != Qgis.GeometryType.Point:
+                            for i in range(len(vertex_list) - 1):
+                                start = vertex_list[i]
+                                end = vertex_list[i + 1]
+                                geom = QgsGeometry.fromPolylineXY([start, end])
+                                midpoint_dist = geom.length() / 2
+                                midpoint = geom.interpolate(midpoint_dist).asPoint()
+                                xy_midpoint = QgsPointXY(midpoint.x(), midpoint.y())
+                                self.midpoint_band.addPoint(xy_midpoint, doUpdate=False)
+                                self.midpoint_snaps.append(xy_midpoint)
+                    if layer.geometryType() == Qgis.GeometryType.Polygon:
+                        for feature in features:
+                            centroid = feature.geometry().centroid()
+                            xy_centroid = QgsPointXY(centroid.x(), centroid.y())
+                            self.center_band.addPoint(xy_centroid, doUpdate=False)
+                            self.center_snaps.append(xy_centroid)
+        self.vertex_band.updatePosition()
+        self.midpoint_band.updatePosition()
         self.center_band.updatePosition()
-        self.midpoint_band.updatePosition()'''
+
+    def setBoxSize(self):
+        scale = self.iface.mapCanvas().mapUnitsPerPixel()
+        self.box_size_calc = scale * self.box_size_raw
 
     def drawCursor(self, canvas, icon, pixelx, pixely):
         # method for dynamic drawing of the cursor

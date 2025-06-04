@@ -120,10 +120,10 @@ class SelectMapTool(BaseMapTool):
         self.order = QgsProject.instance().layerTreeRoot().layerOrder()
         if not self.is_tracing:
             sel_rect = QgsRectangle(
-                (e.mapPoint().x() - (self.box_size_raw / 2)),
-                (e.mapPoint().y() - (self.box_size_raw / 2)),
-                (e.mapPoint().x() + (self.box_size_raw / 2)),
-                (e.mapPoint().y() + (self.box_size_raw / 2))
+                (e.mapPoint().x() - self.box_size_calc),
+                (e.mapPoint().y() - self.box_size_calc),
+                (e.mapPoint().x() + self.box_size_calc),
+                (e.mapPoint().y() + self.box_size_calc)
             )
             sel_geom = QgsGeometry.fromRect(sel_rect)
             sel_engine = QgsGeometry.createGeometryEngine(sel_geom.constGet())
