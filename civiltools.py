@@ -15,7 +15,9 @@ except ImportError:
     from qgis.PyQt.QtGui import QAction
 from .settings_tools.options import CivilToolsOptionsFactory
 from .resources.icons import *
+from .map_tools.base_map_tool import BaseMapTool
 from .map_tools.select_tool import SelectMapTool
+from .create_tools.line_tool import LineMapTool
 from qgis.gui import QgsMapToolPan
 from .settings_tools.init_error_dialog import initErrorDialog
 from .settings_tools.init_dialog import initDialog
@@ -43,9 +45,10 @@ class CivilToolsPlugin:
         )
         # register a keyboard shortcut to launch drafting mode
         self.iface.registerMainWindowAction(self.draftingModeAction, "Ctrl+Return")
-        self.draftingModeAction.triggered.connect(self.SelectMapTool)
+        self.draftingModeAction.triggered.connect(self.setSelectTool)
         self.mainMenu.addAction(self.draftingModeAction)
         self.initOptions()
+        self.initMapTools()
 
     def unload(self):
         self.iface.pluginMenu().removeAction(self.createMenu.menuAction())
@@ -57,6 +60,7 @@ class CivilToolsPlugin:
         self.iface.pluginMenu().removeAction(self.mainMenu.menuAction())
         self.iface.unregisterMainWindowAction(self.draftingModeAction)
         self.iface.unregisterOptionsWidgetFactory(self.options_factory)
+        self.unloadMapTools()
 
     def initCreateMenu(self):
         self.createMenu = self.mainMenu.addMenu("Create Geometry")
@@ -132,12 +136,27 @@ class CivilToolsPlugin:
     def initToolbar(self):
         pass
 
-    def SelectMapTool(self):
+    def initMapTools(self):
+        self.SelectMapTool = SelectMapTool(self.iface.mapCanvas(), self.iface)
+        self.SelectMapTool.toolChangeRequest.connect(self.setOtherTool)
+        self.LineMapTool = LineMapTool(self.iface.mapCanvas(), self.iface)
+        self.LineMapTool.deactivated.connect(self.setSelectTool)
+
+    def unloadMapTools(self):
+        self.SelectMapTool = None
+        self.LineMapTool = None
+
+    def checkInitialized(self):
         project = QgsProject.instance()
-        # check if project has been initialized before launching drafting mode
-        if not QgsExpressionContextUtils.projectScope(project).variable("CAD_file"):
-            iface.messageBar().pushMessage("Project has not been initialized")
-        elif isinstance(self.iface.mapCanvas().mapTool(), SelectMapTool):
+        if not QgsExpressionContextUtils.projectScope(project).variable('CAD_file'):
+            return False
+        else:
+            return True
+
+    def setSelectTool(self):
+        if self.checkInitialized is False:
+            self.iface.messageBar().pushMessage("Project has not been initialized")
+        elif isinstance(self.iface.mapCanvas().mapTool(), BaseMapTool):
             # remove base message
             self.iface.messageBar().clearWidgets()
             # reset default Pan tool
@@ -145,9 +164,12 @@ class CivilToolsPlugin:
             self.iface.mapCanvas().setMapTool(self.panTool)
             self.iface.messageBar().pushMessage("Drafting Mode Deactivated")
         else:
-            self.mapTool = SelectMapTool(self.iface.mapCanvas(), self.iface)
-            self.iface.mapCanvas().setMapTool(self.mapTool)
-            self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
+            self.iface.mapCanvas().setMapTool(self.SelectMapTool)
+
+    def setOtherTool(self, command):
+        match command:
+            case "L":
+                self.iface.mapCanvas().setMapTool(self.LineMapTool)
 
     def initializeProject(self):
         project = QgsProject.instance()

@@ -1,6 +1,6 @@
 from qgis.gui import QgsMapTool, QgsRubberBand
 from qgis.PyQt.QtGui import QColor, QCursor, QAction
-from qgis.PyQt.QtCore import Qt, QPoint
+from qgis.PyQt.QtCore import Qt, QPoint, pyqtSignal
 from qgis.PyQt.QtWidgets import QLineEdit, QTableWidget, QTableWidgetItem
 from qgis.core import (
     QgsProject,
@@ -16,11 +16,14 @@ from qgis.core import (
     QgsApplication
 )
 from .context_menus import baseContextMenu
-from .key_validator import keyValidator
+from .key_validator import keyValidator, Commands
 from os import path
 
 
 class BaseMapTool(QgsMapTool):
+
+    toolChangeRequest = pyqtSignal(str)
+    
     def __init__(self, canvas, iface):
         self.canvas = canvas
         self.iface = iface
@@ -38,6 +41,7 @@ class BaseMapTool(QgsMapTool):
     def activate(self):
         # keeping this on the base class for passing to commands
         # that have PICKFIRST functionality
+        self.iface.messageBar().pushMessage("Drafting Mode", duration=0)
         self.selfeatures = []
         self.sellayers = []
         self.vertex_snaps = []
@@ -172,7 +176,7 @@ class BaseMapTool(QgsMapTool):
         elif self.arrow_right_action not in self.canvas.actions:
             self.canvas.addAction(self.arrow_right_action)
 
-        self.vertex_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
+        '''self.vertex_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
         self.vertex_band.setColor(QColor(0, 255, 69))
         self.vertex_band.setIcon(QgsRubberBand.IconType.ICON_BOX)
         self.vertex_band.setIconSize(10)
@@ -196,8 +200,7 @@ class BaseMapTool(QgsMapTool):
         self.intersection_band.setColor(QColor(0, 255, 69))
         self.intersection_band.setIcon(QgsRubberBand.IconType.ICON_X)
         self.intersection_band.setIconSize(10)
-        self.intersection_band.hide()
-        self.test_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Polygon)
+        self.intersection_band.hide()'''
 
     def on_map_tool_set(self, new_tool, old_tool):
         if new_tool == self:
@@ -249,12 +252,11 @@ class BaseMapTool(QgsMapTool):
         self.hint_table.hide()
         self.hint_selected = None
         self.icon.reset()
-        self.vertex_band.reset()
+        '''self.vertex_band.reset()
         self.midpoint_band.reset()
         self.center_band.reset()
         self.quadrant_band.reset()
-        self.intersection_band.reset()
-        self.test_band.reset()
+        self.intersection_band.reset()'''
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
         # self.canvas.extentsChanged.disconnect(self.getSnaps)
         QgsMapTool.deactivate(self)
@@ -271,7 +273,7 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
-        self.getStaticSnaps(e.mapPoint())
+        # self.getStaticSnaps(e.mapPoint())
 
     def canvasDoubleClickEvent(self, e):
         if self.vertex_band.isVisible():
@@ -424,11 +426,13 @@ class BaseMapTool(QgsMapTool):
                 self.iface.messageBar().pushMessage(self.last_command)
         else:
             matches = self.matchCommand(self.message)
-            self.iface.messageBar().pushMessage(str(matches))
-            self.last_command = self.message
+            command = matches[0][0]
+            self.iface.messageBar().pushMessage(str(command))
+            self.last_command = command
             self.message = ""
             self.cursor_bar.hide()
             self.hint_table.hide()
+            self.toolChangeRequest.emit(command)
 
     def getVectorLayers(self):
         # convenience function for when we start dealing with snaps
@@ -440,8 +444,7 @@ class BaseMapTool(QgsMapTool):
                         color = layer.layer().renderer().symbol().color()
                         self.non_cad_layers.append([layer.layer(), color])
 
-    def getStaticSnaps(self, point):
-        self.test_band.reset(Qgis.GeometryType.Polygon)
+    '''def getStaticSnaps(self, point):
         found = False
         request = QgsFeatureRequest()
         rect = QgsRectangle(
@@ -450,7 +453,6 @@ class BaseMapTool(QgsMapTool):
             (point.x() + self.box_size_calc),
             (point.y() + self.box_size_calc)
         )
-        self.test_band.setToGeometry(QgsGeometry.fromRect(rect))
         request.setFilterRect(rect)
         for layer in QgsProject.instance().layerTreeRoot().layerOrder():
             if found is True:
@@ -458,8 +460,9 @@ class BaseMapTool(QgsMapTool):
             elif layer.source() not in self.vlayers:
                 continue
             else:
-                features = layer.getFeatures(request)
-                if features is None:
+                feature_iterator = layer.getFeatures(request)
+                features = list(feature_iterator)
+                if features == []:
                     continue
                 else:
                     found = True
@@ -495,7 +498,7 @@ class BaseMapTool(QgsMapTool):
                             self.center_snaps.append(xy_centroid)
         self.vertex_band.updatePosition()
         self.midpoint_band.updatePosition()
-        self.center_band.updatePosition()
+        self.center_band.updatePosition()'''
 
     def setBoxSize(self):
         scale = self.iface.mapCanvas().mapUnitsPerPixel()
