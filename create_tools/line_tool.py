@@ -39,7 +39,7 @@ class LineMapTool(BaseMapTool):
     def keyPressEvent(self, e):
         if e.key() in [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape, Qt.Key_Space]:
             self.deactivate()
-        elif e.key == Qt.Key_U:
+        elif e.key() == Qt.Key_U:
             self.vertices.pop()
         else:
             pass

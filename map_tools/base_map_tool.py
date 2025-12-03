@@ -173,7 +173,7 @@ class BaseMapTool(QgsMapTool):
             self.arrow_right_action.setShortcut(Qt.Key_Right)
             self.arrow_right_action.triggered.connect(self.handleHorizontal)
             self.canvas.addAction(self.arrow_right_action)
-        elif self.arrow_right_action not in self.canvas.actions:
+        elif self.arrow_right_action not in self.canvas.actions():
             self.canvas.addAction(self.arrow_right_action)
 
         '''self.vertex_band = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
