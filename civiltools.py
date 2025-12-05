@@ -188,7 +188,7 @@ class CivilToolsPlugin:
             self.iface.mapCanvas().setMapTool(self.panTool)
             self.iface.messageBar().pushMessage("Drafting Mode Deactivated")
         else:
-            self.iface.mapCanvas().setMapTool(self.selectMapTool)
+            self.iface.mapCanvas().setMapTool(self.selectTool)
 
     def setOtherTool(self, command):
         match command:
