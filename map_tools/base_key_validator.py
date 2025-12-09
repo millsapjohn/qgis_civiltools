@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-def keyValidator(str):
+def baseKeyValidator(str):
     raw_match = ""
     matches = []
     # match command shortcut first

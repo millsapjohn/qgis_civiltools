@@ -13,10 +13,12 @@ from qgis.core import (
     QgsGeometry,
     Qgis,
     QgsFeatureRequest,
-    QgsApplication
+    QgsApplication,
+    QgsExpressionContextUtils,
+    QgsFeature,
 )
 from .context_menus import baseContextMenu
-from .key_validator import keyValidator, Commands
+from .base_key_validator import baseKeyValidator, Commands
 from os import path
 
 
@@ -200,10 +202,12 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.hide()
         self.hint_table.hide()
         self.icon.reset()
-        # TODO: figure out why this is throwing errors
-        # self.canvas.contextMenuAboutToShow.disconnect(self.populateContextMenu)
 
     def deactivate(self):
+        try:
+            self.canvas.extentsChanged.disconnect(self.setBoxSize)
+        except (TypeError, RuntimeError):
+            pass
         if self.bsp_action and self.bsp_action in self.canvas.actions():
             try:
                 self.bsp_action.triggered.disconnect(self.handleBackspace)
@@ -238,7 +242,6 @@ class BaseMapTool(QgsMapTool):
         self.vlayers = []
         for entry in self.non_cad_layers:
             entry[0].renderer().symbol().setColor(entry[1])
-            entry[0].triggerRepaint()
         self.non_cad_layers = []
         self.cursor_bar.hide()
         self.hint_table.hide()
@@ -246,8 +249,8 @@ class BaseMapTool(QgsMapTool):
         self.icon.reset()
         self.icon.hide()
         self.canvas.setCanvasColor(QgsProject.instance().backgroundColor())
-        # self.canvas.extentsChanged.disconnect(self.getSnaps)
-        QgsMapTool.deactivate(self)
+        self.canvas.refresh()
+        super().deactivate()
         self.deactivated.emit()
 
     def canvasMoveEvent(self, e):
@@ -261,7 +264,6 @@ class BaseMapTool(QgsMapTool):
         self.cursor_bar.move(
             QPoint((e.pixelPoint().x() + 10), (e.pixelPoint().y() + 10))
         )
-        # self.getStaticSnaps(e.mapPoint())
 
     def canvasDoubleClickEvent(self, e):
         if self.vertex_band.isVisible():
@@ -399,7 +401,7 @@ class BaseMapTool(QgsMapTool):
         self.hint_table.show()
 
     def matchCommand(self, str):
-        result = keyValidator(str)
+        result = baseKeyValidator(str)
         if result[0] is False:
             matches = []
         else:
@@ -552,3 +554,13 @@ class BaseMapTool(QgsMapTool):
         perpendicular_path = path.join(svg_dir, 'perpendicular.svg')
         icon_dict['perpendicular'] = perpendicular_path
         return icon_dict
+    
+    def commit_geometry(layer, geometry, attributes=None):
+        path = QgsExpressionContextUtils.projectScope(QgsProject.instance().variable('CAD_file'))
+        layer_path = path + f'|layername={layer}'
+        vl = QgsVectorLayer(layer_path, layer, 'ogr')
+        vl.startEditing()
+        feature = QgsFeature(vl.fields())
+        feature.setGeometry(geometry)
+        vl.addFeature(feature)
+        vl.commitChanges()

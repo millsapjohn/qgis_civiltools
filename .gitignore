@@ -1,3 +1,5 @@
 __pycache__/
 .mypy_cache/
 resources/cursor.png
+.env
+.github/copilot-instructions.md
