@@ -306,6 +306,8 @@ class CivilToolsPlugin:
                 self.iface.mapCanvas().setMapTool(self.polylineTool)
             case "PO":
                 self.iface.mapCanvas().setMapTool(self.pointTool)
+            case "POF":
+                self.iface.mapCanvas().setMapTool(self.profOffsetTool)
             case "PPR":
                 self.iface.mapCanvas().setMapTool(self.profProjectTool)
             case "PR":
@@ -350,8 +352,6 @@ class CivilToolsPlugin:
                 self.iface.mapCanvas().setMapTool(self.stretchTool)
             case "SV":
                 self.iface.mapCanvas().setMapTool(self.selValTool)
-            case "TED":
-                self.iface.mapCanvas().setMapTool(self.gradTemplateEditTool)
             case "TR":
                 self.iface.mapCanvas().setMapTool(self.trimTool)
             case "U":
