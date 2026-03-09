@@ -35,14 +35,14 @@ class LineMapTool(BaseMapTool):
         super().deactivate()
 
     def canvasPressEvent(self, e):
-        if e.button() == Qt.RightButton:
+        if e.button() == Qt.MouseButton.RightButton:
             self.deactivate()
-        elif e.button() == Qt.LeftButton:
+        elif e.button() == Qt.MouseButton.LeftButton:
             self.line_band.addPoint(e.mapPoint())
             self.vertices.append(e.mapPoint())
 
     def keyPressEvent(self, e):
-        if e.key() in [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space]:
+        if e.key() in [Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space]:
             if self.is_undoing == False:
                 self.deactivate()
             else:
@@ -51,12 +51,12 @@ class LineMapTool(BaseMapTool):
                 self.line_band.reset()
                 for vertex in self.vertices:
                     self.line_band.addPoint(vertex)
-        elif e.key() == Qt.Key_U:
+        elif e.key() == Qt.Key.Key_U:
             if self.is_undoing == False:
                 self.is_undoing = True
             else:
                 self.is_undoing = False
-        elif e.key() == Qt.Key_Escape:
+        elif e.key() == Qt.Key.Key_Escape:
             self.deactivate()
         else:
             pass

@@ -1,5 +1,5 @@
 from qgis.core import Qgis, QgsProject, QgsVectorFileWriter, QgsVectorLayer, QgsField
-from PyQt5.QtCore import QVariant
+from PyQt6.QtCore import QVariant
 from qgis.utils import iface
 
 

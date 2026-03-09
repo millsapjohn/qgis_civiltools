@@ -13,4 +13,4 @@ icon=':/images/themes/default/cadtools/cad.svg'
 
 deprecated=False
 
-qgisMaximumVersion=3.99
+qgisMaximumVersion=4.99

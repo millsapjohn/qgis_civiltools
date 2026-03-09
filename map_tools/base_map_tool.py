@@ -89,7 +89,7 @@ class BaseMapTool(QgsMapTool):
         # override canvas color in drafting mode
         self.canvas.setCanvasColor(self.override_color)
         self.cursor = QCursor()
-        self.cursor.setShape(Qt.BlankCursor)
+        self.cursor.setShape(Qt.CursorShape.BlankCursor)
         self.setCursor(self.cursor)
         self.icon.setColor(self.cursor_color)
         self.initx = self.canvas.mouseLastXY().x()
@@ -138,42 +138,42 @@ class BaseMapTool(QgsMapTool):
         # reinitialize shortcuts
         if not self.bsp_action:
             self.bsp_action = QAction(self.canvas)
-            self.bsp_action.setShortcut(Qt.Key_Backspace)
+            self.bsp_action.setShortcut(Qt.Key.Key_Backspace)
             self.bsp_action.triggered.connect(self.handleBackspace)
             self.canvas.addAction(self.bsp_action)
         elif self.bsp_action not in self.canvas.actions():
             self.canvas.addAction(self.bsp_action)
         if not self.tab_action:
             self.tab_action = QAction(self.canvas)
-            self.tab_action.setShortcut(Qt.Key_Tab)
+            self.tab_action.setShortcut(Qt.Key.Key_Tab)
             self.tab_action.triggered.connect(self.handleTab)
             self.canvas.addAction(self.tab_action)
         elif self.tab_action not in self.canvas.actions():
             self.canvas.addAction(self.tab_action)
         if not self.arrow_down_action:
             self.arrow_down_action = QAction(self.canvas)
-            self.arrow_down_action.setShortcut(Qt.Key_Down)
+            self.arrow_down_action.setShortcut(Qt.Key.Key_Down)
             self.arrow_down_action.triggered.connect(self.handleDownArrow)
             self.canvas.addAction(self.arrow_down_action)
         elif self.arrow_down_action not in self.canvas.actions():
             self.canvas.addAction(self.arrow_down_action)
         if not self.arrow_up_action:
             self.arrow_up_action = QAction(self.canvas)
-            self.arrow_up_action.setShortcut(Qt.Key_Up)
+            self.arrow_up_action.setShortcut(Qt.Key.Key_Up)
             self.arrow_up_action.triggered.connect(self.handleUpArrow)
             self.canvas.addAction(self.arrow_up_action)
         elif self.arrow_up_action not in self.canvas.actions():
             self.canvas.addAction(self.arrow_up_action)
         if not self.arrow_left_action:
             self.arrow_left_action = QAction(self.canvas)
-            self.arrow_left_action.setShortcut(Qt.Key_Left)
+            self.arrow_left_action.setShortcut(Qt.Key.Key_Left)
             self.arrow_left_action.triggered.connect(self.handleHorizontal)
             self.canvas.addAction(self.arrow_left_action)
         elif self.arrow_left_action not in self.canvas.actions():
             self.canvas.addAction(self.arrow_left_action)
         if not self.arrow_right_action:
             self.arrow_right_action = QAction(self.canvas)
-            self.arrow_right_action.setShortcut(Qt.Key_Right)
+            self.arrow_right_action.setShortcut(Qt.Key.Key_Right)
             self.arrow_right_action.triggered.connect(self.handleHorizontal)
             self.canvas.addAction(self.arrow_right_action)
         elif self.arrow_right_action not in self.canvas.actions():
@@ -277,22 +277,22 @@ class BaseMapTool(QgsMapTool):
 
     def keyPressEvent(self, e):
         match e.key():
-            case Qt.Key_Return:
+            case Qt.Key.Key_Return:
                 self.sendCommand()
-            case Qt.Key_Enter:
+            case Qt.Key.Key_Enter:
                 self.sendCommand()
-            case Qt.Key_Escape:
+            case Qt.Key.Key_Escape:
                 if len(self.message) == 0:
                     self.clearSelected()
                 else:
                     self.message = ""
                     self.cursor_bar.hide()
                     self.hint_table.hide()
-            case Qt.Key_Space:
+            case Qt.Key.Key_Space:
                 self.sendCommand()
-            case Qt.Key_Shift:
+            case Qt.Key.Key_Shift:
                 self.shift_modified = True
-            case Qt.Key_Control:
+            case Qt.Key.Key_Control:
                 self.ctrl_modified = True
             case _:
                 if self.message == "":
@@ -303,9 +303,9 @@ class BaseMapTool(QgsMapTool):
 
     def keyReleaseEvent(self, e):
         match e.key():
-            case Qt.Key_Shift:
+            case Qt.Key.Key_Shift:
                 self.shift_modified = False
-            case Qt.Key_Control:
+            case Qt.Key.Key_Control:
                 self.ctrl_modified = False
             case _:
                 pass

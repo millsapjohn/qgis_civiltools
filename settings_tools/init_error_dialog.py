@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDialog, QPushButton, QLabel, QVBoxLayout
+from PyQt6.QtWidgets import QDialog, QPushButton, QLabel, QVBoxLayout
 from qgis.utils import iface
 
 

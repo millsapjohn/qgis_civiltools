@@ -60,11 +60,11 @@ class SelectMapTool(BaseMapTool):
 
     def keyPressEvent(self, e):
         match e.key():
-            case Qt.Key_Return:
+            case Qt.Key.Key_Return:
                 super().sendCommand()
-            case Qt.Key_Enter:
+            case Qt.Key.Key_Enter:
                 super().sendCommand()
-            case Qt.Key_Escape:
+            case Qt.Key.Key_Escape:
                 if len(self.message) == 0:
                     if self.is_dragging is True:
                         self.is_dragging = False
@@ -78,11 +78,11 @@ class SelectMapTool(BaseMapTool):
                     self.message = ""
                     self.cursor_bar.hide()
                     self.hint_table.hide()
-            case Qt.Key_Space:
+            case Qt.Key.Key_Space:
                 super().sendCommand()
-            case Qt.Key_Shift:
+            case Qt.Key.Key_Shift:
                 self.shift_modified = True
-            case Qt.Key_Control:
+            case Qt.Key.Key_Control:
                 self.ctrl_modified = True
             case _:
                 if self.message == "":
@@ -93,9 +93,9 @@ class SelectMapTool(BaseMapTool):
 
     def keyReleaseEvent(self, e):
         match e.key():
-            case Qt.Key_Shift:
+            case Qt.Key.Key_Shift:
                 self.shift_modified = False
-            case Qt.Key_Control:
+            case Qt.Key.Key_Control:
                 self.ctrl_modified = False
             case _:
                 pass
